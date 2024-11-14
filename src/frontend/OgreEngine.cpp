@@ -7,6 +7,7 @@
 // later change this to OgrePresenter.h we want nothing to do with Qt here
 #include <QOgreItem.h>
 #include <CameraController.h>
+#include <ViewportGrid.h>
 
 using namespace Ogre;
 using namespace OgreBites;
@@ -51,8 +52,13 @@ void OgreEngine::setup()
                                                         800, 600,
                                                         0,
                                                         PF_A8R8G8B8,
-                                                        Ogre::TU_RENDERTARGET)
+                                                        Ogre::TU_RENDERTARGET,
+                                                        0,
+                                                        false,
+                                                        4)
                     .get();
+    // auto rt = m_Texture->getBuffer()->getRenderTarget();
+    // m_Texture->setFSAA(16, "");
     m_initialized = true;
 }
 
@@ -83,10 +89,7 @@ void OgreEngine::setupScene()
     camNode->attachObject(light);
 
     // Create main camera controller
-    m_mainCameraController = new CameraMan(camNode);
-    m_mainCameraController->setStyle(CS_FREELOOK);
-    m_mainCameraController->setTopSpeed(5);
-    // m_mainCameraController = new CameraController(camNode);
+    m_mainCameraController = new CameraController(camNode);
     addInputListener(0, m_mainCameraController);
 
     // Create a basic entity
@@ -97,7 +100,17 @@ void OgreEngine::setupScene()
     auto rt = m_Texture->getBuffer()->getRenderTarget();
     auto vp = rt->addViewport(camera);
     vp->setClearEveryFrame(true);
-    vp->setBackgroundColour(ColourValue::Green);
+    vp->setBackgroundColour(ColourValue::Black);
+
+    grid = new ViewportGrid(sceneManager, vp);
+    grid->setColour(ColourValue(0.5, 0.5, 0.5, 0.5));
+    grid->setColour(ColourValue::Green);
+
+    // grid->setDivision(1);
+    // grid->setRenderLayer(ViewportGrid::RenderLayer::RL_BEHIND);
+    // grid->setPerspectiveSize(1);
+    grid->enable();
+    // rt->addListener(grid);
 }
 
 bool OgreEngine::isInitialized()

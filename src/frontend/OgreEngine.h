@@ -6,6 +6,7 @@
 #include <OgreRTShaderSystem.h>
 #include <functional>
 #include <CameraController.h>
+#include <ViewportGrid.h>
 
 class OgreEngine : public OgreBites::ApplicationContextBase
 {
@@ -28,8 +29,9 @@ private:
     Ogre::Texture *m_Texture;
     Ogre::Root *root;
     Ogre::SceneManager *sceneManager;
+    CameraController *m_mainCameraController;
+    Ogre::ViewportGrid *grid;
     // OgreBites::CameraMan *m_mainCameraController;
-    OgreBites::CameraMan *m_mainCameraController;
     bool m_useCurrentGLContext;
     bool m_initialized;
 };
