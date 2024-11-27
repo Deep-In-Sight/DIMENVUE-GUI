@@ -7,7 +7,12 @@
 #include <functional>
 #include <CameraController.h>
 #include <ViewportGrid.h>
-
+#include <OverlayDrawer.h>
+#include <InputListenerChainExt.h>
+namespace Ogre
+{
+    class GL3PlusFBORenderTexture;
+}
 class OgreEngine : public OgreBites::ApplicationContextBase
 {
 public:
@@ -19,19 +24,22 @@ public:
     bool isInitialized();
 
     void getFrame(uint *texId, uint *width, uint *height);
-    void moveCamera();
 
     void renderOneFrame();
     void handleEvent(const OgreBites::Event &event);
 
 private:
     void setup();
+    void setupFBO();
     Ogre::Texture *m_Texture;
     Ogre::Root *root;
     Ogre::SceneManager *sceneManager;
     CameraController *m_mainCameraController;
     Ogre::ViewportGrid *grid;
-    // OgreBites::CameraMan *m_mainCameraController;
+    OverlayDrawer *overlayDrawer;
+    InputListenerChainExt *m_inputLisChain;
+    Ogre::GL3PlusFBORenderTexture *m_fbo;
+
     bool m_useCurrentGLContext;
     bool m_initialized;
 };

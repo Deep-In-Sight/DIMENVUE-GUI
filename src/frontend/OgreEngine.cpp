@@ -8,11 +8,14 @@
 #include <QOgreItem.h>
 #include <CameraController.h>
 #include <ViewportGrid.h>
+#include <OgreOverlaySystem.h>
+#include <OgreImGuiOverlay.h>
+#include <OverlayDrawer.h>
+#include <InputListenerChainExt.h>
+#include <RenderSystems/GL3Plus/OgreGL3PlusFBORenderTexture.h>
 
 using namespace Ogre;
 using namespace OgreBites;
-
-Ogre::PixelFormat pf;
 
 OgreEngine::OgreEngine(bool useCurrentGLContext) : m_useCurrentGLContext(useCurrentGLContext),
                                                    m_initialized(false),
@@ -21,7 +24,25 @@ OgreEngine::OgreEngine(bool useCurrentGLContext) : m_useCurrentGLContext(useCurr
 {
 }
 
-OgreEngine::~OgreEngine() = default;
+OgreEngine::~OgreEngine()
+{
+    if (m_mainCameraController)
+    {
+        delete m_mainCameraController;
+    }
+    if (m_inputLisChain)
+    {
+        delete m_inputLisChain;
+    }
+    if (grid)
+    {
+        delete grid;
+    }
+    if (overlayDrawer)
+    {
+        delete overlayDrawer;
+    }
+};
 
 void OgreEngine::setup()
 {
@@ -34,16 +55,13 @@ void OgreEngine::setup()
         params["currentGLContext"] = "true";
     }
 
-    // modify this to add the current GL context
     auto w = createWindow(mAppName, 1, 1, params);
     w.render->setHidden(true);
+    // createWindow(mAppName);
 
     locateResources();
     initialiseRTShaderSystem();
     loadResources();
-
-    // adds context as listener to process context-level (above the sample level) events
-    mRoot->addFrameListener(this);
 
     m_Texture = Ogre::TextureManager::getSingleton().createManual(
                                                         "OffscreenTexture",
@@ -51,25 +69,45 @@ void OgreEngine::setup()
                                                         Ogre::TEX_TYPE_2D,
                                                         800, 600,
                                                         0,
-                                                        PF_A8R8G8B8,
+                                                        PF_BYTE_RGBA,
                                                         Ogre::TU_RENDERTARGET,
                                                         0,
-                                                        false,
-                                                        4)
+                                                        true)
                     .get();
-    // auto rt = m_Texture->getBuffer()->getRenderTarget();
-    // m_Texture->setFSAA(16, "");
-    m_initialized = true;
-}
 
-void OgreEngine::setupScene()
-{
     root = getRoot();
     sceneManager = root->createSceneManager();
 
     // Initialize RTShader system
     RTShader::ShaderGenerator *shadergen = RTShader::ShaderGenerator::getSingletonPtr();
     shadergen->addSceneManager(sceneManager);
+
+    // imgui overlay setup
+    auto overlaySystem = getOverlaySystem();
+    sceneManager->addRenderQueueListener(overlaySystem);
+    auto overlay = initialiseImGui();
+    overlay->setZOrder(300);
+    overlay->show();
+
+    auto imguiListener = getImGuiInputListener();
+    m_inputLisChain = new InputListenerChainExt();
+    addInputListener(0, m_inputLisChain);
+    m_inputLisChain->addListener(imguiListener);
+
+    m_initialized = true;
+}
+
+void OgreEngine::setupFBO()
+{
+    // auto manager = GL3PlusFBOManager::getSingletonPtr();
+    // auto gl3manager = dynamic_cast<GL3PlusFBOManager *>(manager);
+    // auto buffer = gl3manager->requestRenderBuffer(
+    //     GL_RGBA8, 800, 600, 4);
+    // m_fbo = gl3manager->createRenderTexture("myRTT", buffer, false, 4);
+}
+
+void OgreEngine::setupScene()
+{
 
     // Set up the camera
     auto camNode = sceneManager->getRootSceneNode()->createChildSceneNode();
@@ -90,7 +128,7 @@ void OgreEngine::setupScene()
 
     // Create main camera controller
     m_mainCameraController = new CameraController(camNode);
-    addInputListener(0, m_mainCameraController);
+    m_inputLisChain->addListener(m_mainCameraController);
 
     // Create a basic entity
     auto entity = sceneManager->createEntity("Sinbad.mesh");
@@ -101,16 +139,16 @@ void OgreEngine::setupScene()
     auto vp = rt->addViewport(camera);
     vp->setClearEveryFrame(true);
     vp->setBackgroundColour(ColourValue::Black);
+    vp->setOverlaysEnabled(true);
 
     grid = new ViewportGrid(sceneManager, vp);
     grid->setColour(ColourValue(0.5, 0.5, 0.5, 0.5));
-    grid->setColour(ColourValue::Green);
-
-    // grid->setDivision(1);
-    // grid->setRenderLayer(ViewportGrid::RenderLayer::RL_BEHIND);
-    // grid->setPerspectiveSize(1);
     grid->enable();
-    // rt->addListener(grid);
+
+    overlayDrawer = new OverlayDrawer();
+    rt->addListener(overlayDrawer);
+
+    // getRenderWindow()->addViewport(camera);
 }
 
 bool OgreEngine::isInitialized()
@@ -135,26 +173,11 @@ void OgreEngine::getFrame(uint *texId, uint *width, uint *height)
     *height = m_Texture->getHeight();
 }
 
-void OgreEngine::moveCamera()
-{
-    static int i = 0;
-    float dt = 0.01;
-    float omega = 2 * M_PI;
-    float theta = omega * (i++) * dt;
-    float R = 20;
-    auto camera = sceneManager->getCamera("mainCam");
-    auto camNode = camera->getParentSceneNode();
-    auto position = camNode->getPosition();
-    position.x = R * cos(theta);
-    position.z = R * sin(theta);
-    position.y = 10;
-    camNode->setPosition(position);
-    camNode->lookAt(Vector3(0, 0, 0), Node::TS_WORLD);
-}
-
 void OgreEngine::renderOneFrame()
 {
-    m_Texture->getBuffer()->getRenderTarget()->update();
+    getRoot()->renderOneFrame();
+    // m_Texture->getBuffer()->getRenderTarget()->update();
+    // m_Texture->getBuffer()->getRenderTarget()->writeContentsToFile("frame.png");
 }
 
 void OgreEngine::handleEvent(const OgreBites::Event &event)
