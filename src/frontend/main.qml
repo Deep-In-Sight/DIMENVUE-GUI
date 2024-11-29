@@ -7,6 +7,13 @@ Rectangle {
     width: 800
     height: 700
 
+    ImGuiItem {
+        id: imguiItem
+        anchors.fill: parent
+        visible: true
+        z: 100
+    }
+
     Column {
         anchors.centerIn: parent
         anchors.fill: parent
@@ -22,7 +29,6 @@ Rectangle {
         Button {
             text: qsTr("Click me")
             anchors.horizontalCenter: parent.horizontalCenter
-
         }
     }
 }

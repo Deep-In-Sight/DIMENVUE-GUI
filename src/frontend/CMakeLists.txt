@@ -1,12 +1,14 @@
+add_subdirectory(modules)
+
 find_package(
   Qt5 5.15
   COMPONENTS Quick Qml
   REQUIRED)
 find_package(OGRE REQUIRED COMPONENTS Bites RTShaderSystem)
 
-set(OGRE_LIBS OgreBites OgreRTShaderSystem RenderSystem_GL3Plus GLX)
+set(OGRE_LIBS OgreBites OgreRTShaderSystem GLX)
 set(OGRE_EXTRA_INCLUDES ${OGRE_INCLUDE_DIRS}/RenderSystems/GL3Plus)
-set(QT5_LIBS Qt5::Quick Qt5::Qml)
+set(QT5_LIBS Qt5::Quick Qt5::Qml qt_imgui_quick)
 set(APP_SOURCES main.cpp QOgreItem.cpp OgreEngine.cpp CameraController.cpp
                 ViewportGrid.cpp OverlayDrawer.cpp)
 add_executable(SimpleQtQuickApp ${APP_SOURCES})

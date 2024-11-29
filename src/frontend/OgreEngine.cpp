@@ -1,18 +1,10 @@
 #include <iostream>
 
 #include <OgreEngine.h>
-#include <RenderSystems/GL3Plus/OgreGL3PlusTexture.h>
 #include <math.h>
-#include <QOpenGLContext>
-// later change this to OgrePresenter.h we want nothing to do with Qt here
-#include <QOgreItem.h>
 #include <CameraController.h>
 #include <ViewportGrid.h>
-#include <OgreOverlaySystem.h>
-#include <OgreImGuiOverlay.h>
-#include <OverlayDrawer.h>
 #include <InputListenerChainExt.h>
-#include <RenderSystems/GL3Plus/OgreGL3PlusFBORenderTexture.h>
 
 using namespace Ogre;
 using namespace OgreBites;
@@ -37,10 +29,6 @@ OgreEngine::~OgreEngine()
     if (grid)
     {
         delete grid;
-    }
-    if (overlayDrawer)
-    {
-        delete overlayDrawer;
     }
 };
 
@@ -72,7 +60,8 @@ void OgreEngine::setup()
                                                         PF_BYTE_RGBA,
                                                         Ogre::TU_RENDERTARGET,
                                                         0,
-                                                        true)
+                                                        false,
+                                                        16)
                     .get();
 
     root = getRoot();
@@ -82,28 +71,10 @@ void OgreEngine::setup()
     RTShader::ShaderGenerator *shadergen = RTShader::ShaderGenerator::getSingletonPtr();
     shadergen->addSceneManager(sceneManager);
 
-    // imgui overlay setup
-    auto overlaySystem = getOverlaySystem();
-    sceneManager->addRenderQueueListener(overlaySystem);
-    auto overlay = initialiseImGui();
-    overlay->setZOrder(300);
-    overlay->show();
-
-    auto imguiListener = getImGuiInputListener();
     m_inputLisChain = new InputListenerChainExt();
     addInputListener(0, m_inputLisChain);
-    m_inputLisChain->addListener(imguiListener);
 
     m_initialized = true;
-}
-
-void OgreEngine::setupFBO()
-{
-    // auto manager = GL3PlusFBOManager::getSingletonPtr();
-    // auto gl3manager = dynamic_cast<GL3PlusFBOManager *>(manager);
-    // auto buffer = gl3manager->requestRenderBuffer(
-    //     GL_RGBA8, 800, 600, 4);
-    // m_fbo = gl3manager->createRenderTexture("myRTT", buffer, false, 4);
 }
 
 void OgreEngine::setupScene()
@@ -139,16 +110,10 @@ void OgreEngine::setupScene()
     auto vp = rt->addViewport(camera);
     vp->setClearEveryFrame(true);
     vp->setBackgroundColour(ColourValue::Black);
-    vp->setOverlaysEnabled(true);
 
     grid = new ViewportGrid(sceneManager, vp);
-    grid->setColour(ColourValue(0.5, 0.5, 0.5, 0.5));
+    grid->setColour(ColourValue(0.1, 0.1, 0.1, 1.0));
     grid->enable();
-
-    overlayDrawer = new OverlayDrawer();
-    rt->addListener(overlayDrawer);
-
-    // getRenderWindow()->addViewport(camera);
 }
 
 bool OgreEngine::isInitialized()
@@ -162,13 +127,9 @@ void OgreEngine::getFrame(uint *texId, uint *width, uint *height)
     {
         throw std::runtime_error("Invalid arguments");
     }
-
-    auto glTexture = dynamic_cast<Ogre::GL3PlusTexture *>(m_Texture);
-    if (!glTexture)
-    {
-        throw std::runtime_error("Ogre not using GL3+ renderer");
-    }
-    *texId = glTexture->getGLID();
+    uint tid = 0;
+    m_Texture->getCustomAttribute("GLID", &tid);
+    *texId = tid;
     *width = m_Texture->getWidth();
     *height = m_Texture->getHeight();
 }
@@ -176,8 +137,6 @@ void OgreEngine::getFrame(uint *texId, uint *width, uint *height)
 void OgreEngine::renderOneFrame()
 {
     getRoot()->renderOneFrame();
-    // m_Texture->getBuffer()->getRenderTarget()->update();
-    // m_Texture->getBuffer()->getRenderTarget()->writeContentsToFile("frame.png");
 }
 
 void OgreEngine::handleEvent(const OgreBites::Event &event)

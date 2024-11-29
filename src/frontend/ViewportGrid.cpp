@@ -225,7 +225,7 @@ void ViewportGrid::createGrid()
     {
         MaterialPtr pMaterial = matMgr.create(sMatName, ResourceGroupManager::DEFAULT_RESOURCE_GROUP_NAME);
         pMaterial->getTechnique(0)->setLightingEnabled(false);
-        // pMaterial->getTechnique(0)->getPass(0)->setSceneBlending(SBT_TRANSPARENT_ALPHA);
+        pMaterial->getTechnique(0)->getPass(0)->setSceneBlending(SBT_TRANSPARENT_ALPHA);
         // pMaterial->getTechnique(0)->getPass(0)->setDiffuse(0.5, 0.5, 0.5, 1.0);
         // pMaterial->getTechnique(0)->getPass(0)->setEmissive(1, 0, 0);
         // pMaterial->getTechnique(0)->getPass(0)->setSelfIllumination(0, 0, 1);

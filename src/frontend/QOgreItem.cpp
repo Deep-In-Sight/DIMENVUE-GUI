@@ -12,113 +12,86 @@
 #include <OgreInput.h>
 #include <QEvent>
 
-OgreBites::Event convert(const QEvent *in)
+std::vector<OgreBites::Event> convert(const QEvent *in)
 {
     static QPoint lastMousePos;
-
-    OgreBites::Event out;
-
-    out.type = 0;
+    std::vector<OgreBites::Event> out;
+    OgreBites::Event e;
+    e.type = 0;
 
     switch (in->type())
     {
-    case QEvent::KeyPress:
-        out.type = OgreBites::KEYDOWN;
-        OGRE_FALLTHROUGH;
-    case QEvent::KeyRelease:
-        // ignore auto repeated key-up events to match SDL
-        if (!out.type && !static_cast<const QKeyEvent *>(in)->isAutoRepeat())
-            out.type = OgreBites::KEYUP;
-        {
-            auto *key = static_cast<const QKeyEvent *>(in);
-            out.key.repeat = key->isAutoRepeat();
-            switch (key->key())
-            {
-            case Qt::Key_Escape:
-                out.key.keysym.sym = OgreBites::SDLK_ESCAPE;
-                break;
-            case Qt::Key_Return:
-                out.key.keysym.sym = OgreBites::SDLK_RETURN;
-                break;
-            default:
-                out.key.keysym.sym = std::tolower(key->key());
-                break;
-            }
-            // out.key.keysym.mod = key->modifiers();
-        }
-        break;
     case QEvent::MouseButtonRelease:
-        out.type = OgreBites::MOUSEBUTTONUP;
+        e.type = OgreBites::MOUSEBUTTONUP;
         OGRE_FALLTHROUGH;
     case QEvent::MouseButtonPress:
-        if (!out.type)
-            out.type = OgreBites::MOUSEBUTTONDOWN;
-
+        if (!e.type)
+            e.type = OgreBites::MOUSEBUTTONDOWN;
         {
             auto *mouse = static_cast<const QMouseEvent *>(in);
-            out.button.x = mouse->x();
-            out.button.y = mouse->y();
-            out.button.button = mouse->button();
+            e.button.x = mouse->x();
+            e.button.y = mouse->y();
+            e.button.button = mouse->button();
             lastMousePos = mouse->pos();
 
-            if (out.button.button == Qt::RightButton)
-                out.button.button = OgreBites::BUTTON_RIGHT;
+            if (e.button.button == Qt::RightButton)
+                e.button.button = OgreBites::BUTTON_RIGHT;
         }
+        out.push_back(e);
         break;
     case QEvent::Wheel:
-        out.type = OgreBites::MOUSEWHEEL;
-        out.wheel.y = static_cast<const QWheelEvent *>(in)->angleDelta().y();
-        out.wheel.y = out.wheel.y > 0 ? 1 : -1;
+        e.type = OgreBites::MOUSEWHEEL;
+        e.wheel.y = static_cast<const QWheelEvent *>(in)->angleDelta().y();
+        e.wheel.y = e.wheel.y > 0 ? 1 : -1;
+        out.push_back(e);
         break;
     case QEvent::MouseMove:
-        out.type = OgreBites::MOUSEMOTION;
+        e.type = OgreBites::MOUSEMOTION;
         {
             auto *mouse = static_cast<const QMouseEvent *>(in);
-            out.motion.x = mouse->x();
-            out.motion.y = mouse->y();
-            out.motion.xrel = mouse->x() - lastMousePos.x();
-            out.motion.yrel = mouse->y() - lastMousePos.y();
-
+            e.motion.x = mouse->x();
+            e.motion.y = mouse->y();
+            e.motion.xrel = mouse->x() - lastMousePos.x();
+            e.motion.yrel = mouse->y() - lastMousePos.y();
             lastMousePos = mouse->pos();
-
-            // out.motion.windowID = in.motion.windowID;
         }
+        out.push_back(e);
         break;
+    case QEvent::TouchBegin:
+    case QEvent::TouchUpdate:
+    case QEvent::TouchEnd:
+    {
+        auto touchEvent = static_cast<const QTouchEvent *>(in);
+        for (const auto &p : touchEvent->touchPoints())
+        {
+            e.type = 0;
+            if (p.state() == Qt::TouchPointPressed)
+            {
+                e.type = OgreBites::FINGERDOWN;
+            }
+            else if (p.state() == Qt::TouchPointReleased)
+            {
+                e.type = OgreBites::FINGERUP;
+            }
+            else if (p.state() == Qt::TouchPointMoved)
+            {
+                e.type = OgreBites::FINGERMOTION;
+            }
+            else if (p.state() == Qt::TouchPointStationary)
+            {
+                continue;
+            }
+            e.tfinger.fingerId = p.id();
+            e.tfinger.x = p.pos().x();
+            e.tfinger.y = p.pos().y();
+            e.tfinger.dx = p.pos().x() - p.lastPos().x();
+            e.tfinger.dy = p.pos().y() - p.lastPos().y();
+            out.push_back(e);
+        }
+    }
+    break;
     default:
         break;
-    }
-    return out;
-}
-
-std::vector<OgreBites::Event> convertTouch(const QTouchEvent *in)
-{
-    std::vector<OgreBites::Event> out;
-    for (const auto &p : in->touchPoints())
-    {
-        OgreBites::Event e;
-        e.type = 0;
-        if (p.state() == Qt::TouchPointPressed)
-        {
-            e.type = OgreBites::FINGERDOWN;
-        }
-        else if (p.state() == Qt::TouchPointReleased)
-        {
-            e.type = OgreBites::FINGERUP;
-        }
-        else if (p.state() == Qt::TouchPointMoved)
-        {
-            e.type = OgreBites::FINGERMOTION;
-        }
-        else if (p.state() == Qt::TouchPointStationary)
-        {
-            continue;
-        }
-        e.tfinger.fingerId = p.id();
-        e.tfinger.x = p.pos().x();
-        e.tfinger.y = p.pos().y();
-        e.tfinger.dx = p.pos().x() - p.lastPos().x();
-        e.tfinger.dy = p.pos().y() - p.lastPos().y();
-        out.push_back(e);
     }
     return out;
 }
@@ -127,13 +100,12 @@ QOgreItem::QOgreItem(QQuickItem *parent)
     : QQuickItem(parent), m_texture(nullptr)
 {
     setFlag(ItemHasContents, true);
-    setFlag(ItemAcceptsInputMethod, true);
     setAcceptedMouseButtons(Qt::AllButtons);
-    // setAcceptHoverEvents(true);
     setAcceptTouchEvents(true);
     connect(this, &QQuickItem::windowChanged, this, &QOgreItem::onWindowChanged);
     setFocus(true);
     app = new OgreEngine(true);
+    app->m_instance = app;
 }
 
 void QOgreItem::onWindowChanged(QQuickWindow *window)
@@ -227,18 +199,14 @@ bool QOgreItem::event(QEvent *event)
     auto mouseEvent = dynamic_cast<QMouseEvent *>(event);
     auto wheelEvent = dynamic_cast<QWheelEvent *>(event);
     auto touchEvent = dynamic_cast<QTouchEvent *>(event);
-    auto keyEvent = dynamic_cast<QKeyEvent *>(event);
-    if (mouseEvent || wheelEvent || keyEvent)
+    bool handled = false;
+    if (mouseEvent || wheelEvent || touchEvent)
     {
-        app->handleEvent(convert(event));
-    }
-    if (touchEvent)
-    {
-        for (const auto &e : convertTouch(touchEvent))
+        for (const auto &e : convert(event))
         {
             app->handleEvent(e);
         }
+        handled = true;
     }
-
-    return true;
+    return handled;
 }

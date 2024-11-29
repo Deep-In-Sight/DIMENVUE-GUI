@@ -28,9 +28,8 @@ public:
     void renderOneFrame();
     void handleEvent(const OgreBites::Event &event);
 
-private:
+    // private:
     void setup();
-    void setupFBO();
     Ogre::Texture *m_Texture;
     Ogre::Root *root;
     Ogre::SceneManager *sceneManager;
@@ -42,4 +41,5 @@ private:
 
     bool m_useCurrentGLContext;
     bool m_initialized;
+    OgreEngine *m_instance;
 };

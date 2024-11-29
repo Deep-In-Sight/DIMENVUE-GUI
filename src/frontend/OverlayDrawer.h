@@ -1,12 +1,14 @@
 #pragma once
-#include <OgreRenderTargetListener.h>
+#include <ImGuiItem.h>
 
-class OverlayDrawer : public Ogre::RenderTargetListener
+class OverlayDrawer : public ImGuiOverlay
 {
 public:
-    OverlayDrawer();
+    OverlayDrawer(ImGuiItem *parent);
     ~OverlayDrawer();
-    virtual void preRenderTargetUpdate(const Ogre::RenderTargetEvent &evt) override;
+
+public slots:
+    void onUpdateImGui() override;
 
 private:
     struct Impl;
