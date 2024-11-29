@@ -1,0 +1,3 @@
+[submodule "src/frontend/modules/qtimgui"]
+	path = src/frontend/modules/qtimgui
+	url = git@github.com:Deep-In-Sight/qtimgui.git
