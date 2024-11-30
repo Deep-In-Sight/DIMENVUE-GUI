@@ -8,6 +8,7 @@
 #include <QOpenGLContext>
 #include <thread>
 #include <OgreEngine.h>
+#include <QMutex>
 
 class OgrePresenter
 {
@@ -28,17 +29,21 @@ signals:
 
 protected:
     QSGNode *updatePaintNode(QSGNode *oldNode, UpdatePaintNodeData *data) override;
+    void geometryChanged(const QRectF &newGeometry, const QRectF &oldGeometry) override;
 
 private slots:
     void onWindowChanged(QQuickWindow *window);
     void onBeforeRendering();
 
 private:
-    void _makeOgreCurrent();
-    void _makeQtCurrent();
+    void resetTexture();
+    QMutex m_mutex;
+    uint texId;
+    QOpenGLContext *_makeContextCurrent(QOpenGLContext *newCtx);
     bool event(QEvent *event) override;
     QOpenGLContext *m_qtcontext;
     QOpenGLContext *m_ogrecontext;
     QSGTexture *m_texture;
     OgreEngine *app;
+    bool m_needResetTexture;
 };

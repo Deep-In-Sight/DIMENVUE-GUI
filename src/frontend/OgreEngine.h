@@ -16,30 +16,31 @@ namespace Ogre
 class OgreEngine : public OgreBites::ApplicationContextBase
 {
 public:
-    OgreEngine(bool useCurrentGLContext);
+    OgreEngine(const OgreEngine &) = delete;
+    OgreEngine &operator=(const OgreEngine &) = delete;
     ~OgreEngine();
 
-    void setupScene();
+    static OgreEngine *getInstance();
 
+    void initialize(bool useCurrentGLContext);
     bool isInitialized();
 
-    void getFrame(uint *texId, uint *width, uint *height);
-
+    uint createNewTexture(uint width, uint height);
     void renderOneFrame();
     void handleEvent(const OgreBites::Event &event);
 
-    // private:
+private:
+    OgreEngine();
     void setup();
+    void setupBasicScene();
     Ogre::Texture *m_Texture;
     Ogre::Root *root;
     Ogre::SceneManager *sceneManager;
     CameraController *m_mainCameraController;
     Ogre::ViewportGrid *grid;
-    OverlayDrawer *overlayDrawer;
     InputListenerChainExt *m_inputLisChain;
-    Ogre::GL3PlusFBORenderTexture *m_fbo;
 
     bool m_useCurrentGLContext;
     bool m_initialized;
-    OgreEngine *m_instance;
+    static OgreEngine *m_instance;
 };

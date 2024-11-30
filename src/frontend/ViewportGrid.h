@@ -77,8 +77,12 @@ namespace Ogre
 
     public:
         // Constructors and destructor
-        ViewportGrid(SceneManager *pSceneMgr, Viewport *pViewport);
+        ViewportGrid(SceneManager *pSceneMgr);
         virtual ~ViewportGrid();
+
+        // Attach to a viewport
+        void attachToViewport(Viewport *pViewport);
+        void detachFromViewport();
 
         //! Grid colour
         const ColourValue &getColour() const { return m_colour1; }

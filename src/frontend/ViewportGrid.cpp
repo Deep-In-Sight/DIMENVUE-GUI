@@ -42,25 +42,45 @@ static const String sMatName = "ViewportGrid";
  * Constructors and destructor *
  ******************************/
 
-ViewportGrid::ViewportGrid(SceneManager *pSceneMgr, Viewport *pViewport)
-    : m_pSceneMgr(pSceneMgr), m_pViewport(pViewport), m_enabled(false), m_pPrevCamera(0), m_prevOrtho(false), m_prevNear(0), m_prevFOVy(0), m_prevAspectRatio(0), m_forceUpdate(true), m_pGrid(0), m_created(false), m_pNode(0), m_colour1(0.7, 0.7, 0.7), m_colour2(0.7, 0.7, 0.7), m_division(10), m_perspSize(100), m_renderScale(true), m_renderMiniAxes(true)
+ViewportGrid::ViewportGrid(SceneManager *pSceneMgr)
+    : m_pSceneMgr(pSceneMgr), m_pViewport(nullptr), m_enabled(false), m_pPrevCamera(0), m_prevOrtho(false), m_prevNear(0), m_prevFOVy(0), m_prevAspectRatio(0), m_forceUpdate(true), m_pGrid(0), m_created(false), m_pNode(0), m_colour1(0.7, 0.7, 0.7), m_colour2(0.7, 0.7, 0.7), m_division(10), m_perspSize(100), m_renderScale(true), m_renderMiniAxes(true)
 {
     assert(m_pSceneMgr);
-    assert(m_pViewport);
 
     createGrid();
     setRenderLayer(RL_BEHIND);
-
-    // Add this as a render target listener
-    m_pViewport->getTarget()->addListener(this);
 }
 
 ViewportGrid::~ViewportGrid()
 {
-    // Remove this as a render target listener
-    m_pViewport->getTarget()->removeListener(this);
-
+    detachFromViewport();
     destroyGrid();
+}
+
+void ViewportGrid::attachToViewport(Viewport *pViewport)
+{
+    assert(pViewport);
+
+    // Remove this as a render target listener from the old viewport
+    if (m_pViewport)
+        m_pViewport->getTarget()->removeListener(this);
+
+    m_pViewport = pViewport;
+
+    // Add this as a render target listener
+    m_pViewport->getTarget()->addListener(this);
+
+    // Force an update
+    m_forceUpdate = true;
+}
+
+void ViewportGrid::detachFromViewport()
+{
+    // Remove this as a render target listener
+    if (m_pViewport)
+        m_pViewport->getTarget()->removeListener(this);
+
+    m_pViewport = 0;
 }
 
 /************************
@@ -207,8 +227,8 @@ void ViewportGrid::postViewportUpdate(const RenderTargetViewportEvent &evt)
 
 void ViewportGrid::createGrid()
 {
-    String name = m_pViewport->getTarget()->getName() + "::";
-    name += StringConverter::toString(m_pViewport->getZOrder()) + "::ViewportGrid";
+    static int grid_id = 0;
+    String name = "ViewportGrid::" + std::to_string(grid_id++);
 
     // Create the manual object
     m_pGrid = m_pSceneMgr->createManualObject(name);

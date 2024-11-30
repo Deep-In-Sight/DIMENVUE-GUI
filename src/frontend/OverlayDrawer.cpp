@@ -27,6 +27,11 @@ struct OverlayDrawer::Impl
         if (!is_enabled())
             return;
         ImGui::ShowDemoWindow();
+        if (ImGui::Begin("Debug"))
+        {
+            ImGui::Text("FPS:%.2f", ImGui::GetIO().Framerate);
+        }
+        ImGui::End();
     }
 
     bool overlay_enable = false;

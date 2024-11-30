@@ -9,10 +9,85 @@
 using namespace Ogre;
 using namespace OgreBites;
 
-OgreEngine::OgreEngine(bool useCurrentGLContext) : m_useCurrentGLContext(useCurrentGLContext),
-                                                   m_initialized(false),
-                                                   m_mainCameraController(nullptr),
-                                                   ApplicationContextBase("OgreBackend")
+OgreEngine *OgreEngine::m_instance = nullptr;
+
+OgreEngine *OgreEngine::getInstance()
+{
+    if (!m_instance)
+    {
+        m_instance = new OgreEngine();
+    }
+    return m_instance;
+}
+
+void OgreEngine::initialize(bool useCurrentGLContext)
+{
+    if (m_initialized)
+    {
+        return;
+    }
+    m_useCurrentGLContext = useCurrentGLContext;
+    initApp();
+    setupBasicScene();
+    m_initialized = true;
+}
+
+bool OgreEngine::isInitialized()
+{
+    return m_initialized;
+}
+
+uint OgreEngine::createNewTexture(uint width, uint height)
+{
+    if (!m_initialized)
+    {
+        throw std::runtime_error("OgreEngine::initialize() must be called first");
+    }
+    if (m_Texture)
+    {
+        grid->detachFromViewport();
+        Ogre::TextureManager::getSingleton().remove("OffscreenTexture");
+    }
+    m_Texture = Ogre::TextureManager::getSingleton().createManual(
+                                                        "OffscreenTexture",
+                                                        Ogre::ResourceGroupManager::DEFAULT_RESOURCE_GROUP_NAME,
+                                                        Ogre::TEX_TYPE_2D,
+                                                        width, height,
+                                                        0,
+                                                        PF_BYTE_RGBA,
+                                                        Ogre::TU_RENDERTARGET,
+                                                        0,
+                                                        false,
+                                                        16)
+                    .get();
+    auto rt = m_Texture->getBuffer()->getRenderTarget();
+    auto vp = rt->addViewport(sceneManager->getCamera("mainCam"));
+    vp->setClearEveryFrame(true);
+    vp->setBackgroundColour(ColourValue::Black);
+    grid->attachToViewport(vp);
+
+    uint tid = 0;
+    m_Texture->getCustomAttribute("GLID", &tid);
+    return tid;
+}
+
+void OgreEngine::renderOneFrame()
+{
+    if (m_Texture)
+    {
+        m_Texture->getBuffer()->getRenderTarget()->update();
+    }
+}
+
+void OgreEngine::handleEvent(const OgreBites::Event &event)
+{
+    ApplicationContextBase::_fireInputEvent(event, 0);
+}
+
+OgreEngine::OgreEngine() : m_initialized(false),
+                           m_Texture(nullptr),
+                           m_mainCameraController(nullptr),
+                           ApplicationContextBase("OgreBackend")
 {
 }
 
@@ -45,24 +120,10 @@ void OgreEngine::setup()
 
     auto w = createWindow(mAppName, 1, 1, params);
     w.render->setHidden(true);
-    // createWindow(mAppName);
 
     locateResources();
     initialiseRTShaderSystem();
     loadResources();
-
-    m_Texture = Ogre::TextureManager::getSingleton().createManual(
-                                                        "OffscreenTexture",
-                                                        Ogre::ResourceGroupManager::DEFAULT_RESOURCE_GROUP_NAME,
-                                                        Ogre::TEX_TYPE_2D,
-                                                        800, 600,
-                                                        0,
-                                                        PF_BYTE_RGBA,
-                                                        Ogre::TU_RENDERTARGET,
-                                                        0,
-                                                        false,
-                                                        16)
-                    .get();
 
     root = getRoot();
     sceneManager = root->createSceneManager();
@@ -73,13 +134,10 @@ void OgreEngine::setup()
 
     m_inputLisChain = new InputListenerChainExt();
     addInputListener(0, m_inputLisChain);
-
-    m_initialized = true;
 }
 
-void OgreEngine::setupScene()
+void OgreEngine::setupBasicScene()
 {
-
     // Set up the camera
     auto camNode = sceneManager->getRootSceneNode()->createChildSceneNode();
     auto camera = sceneManager->createCamera("mainCam");
@@ -106,40 +164,7 @@ void OgreEngine::setupScene()
     auto entityNode = sceneManager->getRootSceneNode()->createChildSceneNode();
     entityNode->attachObject(entity);
 
-    auto rt = m_Texture->getBuffer()->getRenderTarget();
-    auto vp = rt->addViewport(camera);
-    vp->setClearEveryFrame(true);
-    vp->setBackgroundColour(ColourValue::Black);
-
-    grid = new ViewportGrid(sceneManager, vp);
+    grid = new ViewportGrid(sceneManager);
     grid->setColour(ColourValue(0.1, 0.1, 0.1, 1.0));
     grid->enable();
-}
-
-bool OgreEngine::isInitialized()
-{
-    return m_initialized;
-}
-
-void OgreEngine::getFrame(uint *texId, uint *width, uint *height)
-{
-    if (!texId | !width | !height)
-    {
-        throw std::runtime_error("Invalid arguments");
-    }
-    uint tid = 0;
-    m_Texture->getCustomAttribute("GLID", &tid);
-    *texId = tid;
-    *width = m_Texture->getWidth();
-    *height = m_Texture->getHeight();
-}
-
-void OgreEngine::renderOneFrame()
-{
-    getRoot()->renderOneFrame();
-}
-
-void OgreEngine::handleEvent(const OgreBites::Event &event)
-{
-    ApplicationContextBase::_fireInputEvent(event, 0);
 }

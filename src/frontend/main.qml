@@ -22,8 +22,8 @@ Rectangle {
         QOgreItem {
             anchors.horizontalCenter: parent.horizontalCenter
             id: customImageNode
-            width: 800
-            height: 600
+            width: parent.width
+            height: width * 0.75
         }
 
         Button {

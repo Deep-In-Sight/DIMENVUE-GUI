@@ -11,6 +11,8 @@
 #include <QOpenGLFunctions>
 #include <OgreInput.h>
 #include <QEvent>
+#include <QTime>
+#include <QMutexLocker>
 
 std::vector<OgreBites::Event> convert(const QEvent *in)
 {
@@ -97,15 +99,18 @@ std::vector<OgreBites::Event> convert(const QEvent *in)
 }
 
 QOgreItem::QOgreItem(QQuickItem *parent)
-    : QQuickItem(parent), m_texture(nullptr)
+    : QQuickItem(parent),
+      m_texture(nullptr),
+      texId(0),
+      m_qtcontext(nullptr),
+      m_ogrecontext(nullptr),
+      app(nullptr)
 {
     setFlag(ItemHasContents, true);
     setAcceptedMouseButtons(Qt::AllButtons);
     setAcceptTouchEvents(true);
     connect(this, &QQuickItem::windowChanged, this, &QOgreItem::onWindowChanged);
     setFocus(true);
-    app = new OgreEngine(true);
-    app->m_instance = app;
 }
 
 void QOgreItem::onWindowChanged(QQuickWindow *window)
@@ -113,41 +118,56 @@ void QOgreItem::onWindowChanged(QQuickWindow *window)
     connect(window, &QQuickWindow::beforeRendering, this, &QOgreItem::onBeforeRendering, Qt::DirectConnection);
 }
 
-uint texId, texWidth, texHeight;
 void QOgreItem::onBeforeRendering()
 {
-    m_qtcontext = QOpenGLContext::currentContext();
-    m_ogrecontext = new QOpenGLContext();
-    m_ogrecontext->setFormat(m_qtcontext->format());
-    m_ogrecontext->setShareContext(m_qtcontext);
-    m_ogrecontext->create();
-    _makeOgreCurrent();
-    app->initApp();
-    app->setupScene();
-    app->getFrame(&texId, &texWidth, &texHeight);
+    if (!m_ogrecontext)
+    {
+        m_qtcontext = QOpenGLContext::currentContext();
+        m_ogrecontext = new QOpenGLContext();
+        m_ogrecontext->setFormat(m_qtcontext->format());
+        m_ogrecontext->setShareContext(m_qtcontext);
+        m_ogrecontext->create();
+    }
+    auto lastCtx = _makeContextCurrent(m_ogrecontext);
+    app = OgreEngine::getInstance();
+    app->initialize(true);
+    if (!texId)
+    {
+        resetTexture();
+    }
     app->renderOneFrame();
-    _makeQtCurrent();
-    disconnect(window(), &QQuickWindow::beforeRendering, this, &QOgreItem::onBeforeRendering);
+    _makeContextCurrent(lastCtx);
 }
 
-void QOgreItem::_makeOgreCurrent()
+QOpenGLContext *QOgreItem::_makeContextCurrent(QOpenGLContext *newCtx)
 {
-    if (!m_ogrecontext || !m_qtcontext || QOpenGLContext::currentContext() == m_ogrecontext)
+    auto lastCtx = QOpenGLContext::currentContext();
+    newCtx->makeCurrent(window());
+    return lastCtx;
+}
+
+void QOgreItem::resetTexture()
+{
+    if (!app || !app->isInitialized())
     {
         return;
     }
-    m_qtcontext->doneCurrent();
-    m_ogrecontext->makeCurrent(window());
-}
-
-void QOgreItem::_makeQtCurrent()
-{
-    if (!m_ogrecontext || !m_qtcontext || QOpenGLContext::currentContext() == m_qtcontext)
+    auto lastCtx = QOpenGLContext::currentContext();
+    _makeContextCurrent(m_ogrecontext);
+    texId = app->createNewTexture(width(), height());
+    _makeContextCurrent(m_qtcontext);
+    if (m_texture)
     {
-        return;
+        delete m_texture;
     }
-    m_ogrecontext->doneCurrent();
-    m_qtcontext->makeCurrent(window());
+    m_texture = window()->createTextureFromNativeObject(
+        QQuickWindow::NativeObjectTexture,
+        &texId,
+        0,
+        QSize(width(), height()),
+        QQuickWindow::TextureHasAlphaChannel);
+    m_texture->bind();
+    _makeContextCurrent(lastCtx);
 }
 
 QSGNode *QOgreItem::updatePaintNode(QSGNode *oldNode, UpdatePaintNodeData *)
@@ -157,41 +177,36 @@ QSGNode *QOgreItem::updatePaintNode(QSGNode *oldNode, UpdatePaintNodeData *)
     {
         node = window()->createImageNode();
         node->setRect(boundingRect());
-    }
-
-    if (!m_texture && !texId)
-    {
-        // create a default texture for qsgimagenode in case ogre is not yet initialized
+        // TODO add other default texture
         m_texture = window()->createTextureFromImage(QImage(":/RenderOutput.png"));
         m_texture->bind();
+        node->setTexture(m_texture);
     }
 
-    if (app && app->isInitialized())
     {
-
-        _makeOgreCurrent();
-        app->renderOneFrame();
-        app->getFrame(&texId, &texWidth, &texHeight);
-        _makeQtCurrent();
-        if (m_texture)
+        // QMutexLocker locker(&m_mutex); //not really needed
+        if (m_needResetTexture)
         {
-            delete m_texture;
+            resetTexture();
+            node->setTexture(m_texture);
+            node->setRect(boundingRect());
+            m_needResetTexture = false;
         }
-        m_texture = window()->createTextureFromNativeObject(
-            QQuickWindow::NativeObjectTexture,
-            &texId,
-            0,
-            QSize(texWidth, texHeight),
-            QQuickWindow::TextureHasAlphaChannel);
-
-        m_texture->bind();
     }
 
-    node->setTexture(m_texture);
     node->markDirty(QSGNode::DirtyMaterial);
     update();
 
     return node;
+}
+
+void QOgreItem::geometryChanged(const QRectF &newGeometry, const QRectF &oldGeometry)
+{
+    {
+        // QMutexLocker locker(&m_mutex);
+        m_needResetTexture = true;
+    }
+    QQuickItem::geometryChanged(newGeometry, oldGeometry);
 }
 
 bool QOgreItem::event(QEvent *event)
@@ -199,14 +214,12 @@ bool QOgreItem::event(QEvent *event)
     auto mouseEvent = dynamic_cast<QMouseEvent *>(event);
     auto wheelEvent = dynamic_cast<QWheelEvent *>(event);
     auto touchEvent = dynamic_cast<QTouchEvent *>(event);
-    bool handled = false;
     if (mouseEvent || wheelEvent || touchEvent)
     {
         for (const auto &e : convert(event))
         {
             app->handleEvent(e);
         }
-        handled = true;
     }
-    return handled;
+    return true;
 }
