@@ -5,7 +5,7 @@ find_package(
   COMPONENTS Quick Qml
   REQUIRED)
 find_package(OGRE REQUIRED COMPONENTS Bites RTShaderSystem)
-find_package(PCL REQUIRED COMPONENTS common)
+find_package(PCL REQUIRED COMPONENTS common octree)
 
 set(OGRE_LIBS OgreBites OgreRTShaderSystem GLX)
 set(OGRE_EXTRA_INCLUDES ${OGRE_INCLUDE_DIRS}/RenderSystems/GL3Plus)

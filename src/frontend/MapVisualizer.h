@@ -4,8 +4,11 @@
 #include <Ogre.h>
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
+#include <pcl/octree/octree.h>
 
 typedef pcl::PointCloud<pcl::PointXYZ> PointCloudXYZ;
+typedef pcl::octree::OctreePointCloud<pcl::PointXYZ> OctreeXYZ;
+typedef OctreeXYZ::DepthFirstIterator DFSIterator;
 
 class MapVisualizer
 {
@@ -20,8 +23,8 @@ public:
     MapVisualizer &operator=(const MapVisualizer &) = delete;
 
     ~MapVisualizer();
-    void addPointCloud(PointCloudXYZ::Ptr cloud);
-    void addRandomCloud(int numPoints);
+
+    Ogre::SceneNode *addRandomCloud(int numPoints, float scale = 1.0f);
 
 private:
     MapVisualizer();

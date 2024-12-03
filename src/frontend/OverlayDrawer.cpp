@@ -51,11 +51,33 @@ struct OverlayDrawer::Impl
         if (ImGui::Begin("Test point cloud"))
         {
             static int numPoints = 1;
-            ImGui::DragInt("millions", &numPoints, 1, 0, 1000);
+            static int numPointLog = 0;
+            static float scale = 1.0;
+            static std::vector<std::pair<Ogre::SceneNode *, bool>> pcds;
+            ImGui::DragInt("x", &numPoints, 1, 0, 1000);
+            ImGui::DragInt("log", &numPointLog, 1, 0, 6);
+            ImGui::DragFloat("scale", &scale, 0.1, 0.1, 100);
             if (ImGui::Button("Add random cloud"))
             {
                 MapVisualizer *viz = MapVisualizer::getInstance();
-                viz->addRandomCloud(numPoints * 1000000);
+                auto node = viz->addRandomCloud(numPoints * pow(10, numPointLog), scale);
+                pcds.push_back({node, true});
+            }
+
+            ImGui::Text("Point clouds:");
+            for (auto &p : pcds)
+            {
+                auto node = p.first;
+                auto &visible = p.second;
+                auto name = node->getName();
+                if (name.empty())
+                {
+                    name = std::to_string(reinterpret_cast<uint64_t>(node));
+                }
+                if (ImGui::Checkbox(name.c_str(), &visible))
+                {
+                    node->setVisible(visible);
+                }
             }
         }
         ImGui::End();

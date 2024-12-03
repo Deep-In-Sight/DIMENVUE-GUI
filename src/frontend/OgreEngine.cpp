@@ -163,10 +163,10 @@ void OgreEngine::setupBasicScene()
     m_mainCameraController = new CameraController(camNode);
     m_inputLisChain->addListener(m_mainCameraController);
 
-    // Create a basic entity
-    auto entity = sceneManager->createEntity("Sinbad.mesh");
-    auto entityNode = sceneManager->getRootSceneNode()->createChildSceneNode();
-    entityNode->attachObject(entity);
+    // // Create a basic entity
+    // auto entity = sceneManager->createEntity("Sinbad.mesh");
+    // auto entityNode = sceneManager->getRootSceneNode()->createChildSceneNode();
+    // entityNode->attachObject(entity);
 
     grid = new ViewportGrid(sceneManager);
     grid->setColour(ColourValue(0.1, 0.1, 0.1, 1.0));
