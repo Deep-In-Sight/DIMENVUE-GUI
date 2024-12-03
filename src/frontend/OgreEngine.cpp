@@ -126,7 +126,11 @@ void OgreEngine::setup()
     loadResources();
 
     root = getRoot();
-    sceneManager = root->createSceneManager();
+    sceneManager = root->createSceneManager("OctreeSceneManager", "MySceneManager");
+    if (root->hasSceneManager("MySceneManager"))
+    {
+        std::cout << "SceneManager with name MySceneManager exists" << std::endl;
+    }
 
     // Initialize RTShader system
     RTShader::ShaderGenerator *shadergen = RTShader::ShaderGenerator::getSingletonPtr();

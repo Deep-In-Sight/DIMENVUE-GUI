@@ -3,6 +3,9 @@
 #include <imgui.h>
 #include <imgui_internal.h>
 #include <iostream>
+#include <OgreEngine.h>
+#include <MapVisualizer.h>
+
 struct OverlayDrawer::Impl
 {
     /***
@@ -24,17 +27,58 @@ struct OverlayDrawer::Impl
 
     void update()
     {
-        if (!is_enabled())
-            return;
+        // if (!is_enabled())
+        //     return;
         ImGui::ShowDemoWindow();
         if (ImGui::Begin("Debug"))
         {
             ImGui::Text("FPS:%.2f", ImGui::GetIO().Framerate);
+            if (m_materials.empty())
+            {
+                initializeMaterials();
+            }
+            else
+            {
+                ImGui::Text("Materials:");
+                for (auto &mat : m_materials)
+                {
+                    ImGui::Text(mat.c_str());
+                }
+            }
+        }
+        ImGui::End();
+
+        if (ImGui::Begin("Test point cloud"))
+        {
+            static int numPoints = 1;
+            ImGui::DragInt("millions", &numPoints, 1, 0, 1000);
+            if (ImGui::Button("Add random cloud"))
+            {
+                MapVisualizer *viz = MapVisualizer::getInstance();
+                viz->addRandomCloud(numPoints * 1000000);
+            }
         }
         ImGui::End();
     }
 
+    void initializeMaterials()
+    {
+        auto ogre = OgreEngine::getInstance();
+        if (!ogre->isInitialized())
+        {
+            return;
+        }
+        auto matMgr = Ogre::MaterialManager::getSingletonPtr();
+        auto iter = matMgr->getResourceIterator();
+        while (iter.hasMoreElements())
+        {
+            auto mat = iter.getNext();
+            m_materials.push_back(mat->getName());
+        }
+    }
+
     bool overlay_enable = false;
+    std::vector<std::string> m_materials;
 };
 
 OverlayDrawer::OverlayDrawer(ImGuiItem *parent) : ImGuiOverlay(parent)
