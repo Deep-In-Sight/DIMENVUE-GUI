@@ -57,6 +57,9 @@ public:
     Q_INVOKABLE void setMeasurementMode(bool enable);
     Q_INVOKABLE void resetView();
     Q_INVOKABLE void saveView();
+    Q_INVOKABLE void uploadCurrentView();
+    Q_INVOKABLE void uploadCheckedView(const std::list<dimenvue::backend::ScanViewPtr>&);
+    Q_INVOKABLE void synchronize();
 
     float usageTB() const;
     float totalTB() const;

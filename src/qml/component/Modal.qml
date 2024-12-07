@@ -39,6 +39,14 @@ Item {
 
         root.modalUnloaded(url)
     }
+    function unload2(url) {
+        var index = loader.source.toString().indexOf(url, 0)
+        console.log("unload2(" + url + ") index: " + index)
+
+        if (0 <= index) {
+            unload()
+        }
+    }
 
     MouseArea {
         id: bgModal

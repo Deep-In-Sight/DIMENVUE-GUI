@@ -119,6 +119,16 @@ void BackendMonitor::initializeSensor(std::future<bool> &&f)
     d->add(new Monitor("initializeSensor", std::move(f)));
 }
 
+void BackendMonitor::uploadScan(std::future<bool> &&f)
+{
+    d->add(new Monitor("uploadScan", std::move(f)));
+}
+
+void BackendMonitor::synchronizeAllScan(std::future<bool> &&f)
+{
+    d->add(new Monitor("synchronizeAllScan", std::move(f)));
+}
+
 void BackendMonitor::deleteScan(std::future<bool> &&f)
 {
     d->add(new Monitor("deleteScan", std::move(f)));

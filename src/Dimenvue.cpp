@@ -362,6 +362,13 @@ void Dimenvue::removeChecked()
     d->removeChecked();
 }
 
+void Dimenvue::uploadChecked()
+{
+    auto list = d->model->checkedItems();
+
+    d->db->uploadCheckedView(list);
+}
+
 void Dimenvue::loadScanComplete()
 {
     auto roots = d->engine.rootObjects();

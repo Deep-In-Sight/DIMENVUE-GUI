@@ -127,6 +127,7 @@ Item {
                     onClicked: {
                         if (!syncOk) {
                             modal.loadFullscreen("qrc:/qml/popup/DataListSyncPopup.qml", 0, 0)
+                            db.synchronize()
                         }
                     }
                 }
@@ -198,6 +199,10 @@ Item {
             width: 273; height: 64
             iconPath: "qrc:/resources/images/file_upload.png"
             buttonText: tr_DATA_EXPORT
+            onClicked: {
+                app.uploadChecked()
+                modal.load("qrc:/qml/datalist/DataTransfer.qml", 0, 0)
+            }
         }
     }
     //=========================================================================

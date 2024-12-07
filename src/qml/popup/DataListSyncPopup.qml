@@ -20,6 +20,13 @@ Item {
 
         }
     }
+    Connections {
+        target: monitor
+        onSynchronizeAllScanDone: {
+            fadeOut()
+        }
+    }
+
     //-------------------------------------------------------------------------
 
     property bool wip: true //organize the scan data
@@ -78,9 +85,9 @@ Item {
     SequentialAnimation {
         id: dissolve
 
-        PauseAnimation {
-            duration: 1500
-        }
+//        PauseAnimation {
+//            duration: 1500
+//        }
         NumberAnimation {
             target: root; properties: "opacity"; to: 0.0; duration: 100; easing: Easing.OutCubic
         }

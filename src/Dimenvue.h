@@ -31,6 +31,7 @@ public:
     Q_INVOKABLE void setSortRole(int role, int order);  //0: accending
 
     Q_INVOKABLE void removeChecked();
+    Q_INVOKABLE void uploadChecked();
 
     Q_INVOKABLE void loadScanComplete();
 

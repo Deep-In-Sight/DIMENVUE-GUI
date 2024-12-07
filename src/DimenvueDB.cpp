@@ -376,6 +376,30 @@ void DimenvueDB::saveView()
     }
 }
 
+void DimenvueDB::uploadCurrentView()
+{
+    auto list = std::list<dimenvue::backend::ScanViewPtr>{d->currentView};
+
+    auto ret = d->backend.getScanList()->uploadAsync(list);
+
+    d->monitor->uploadScan(std::move(ret));
+}
+
+void DimenvueDB::uploadCheckedView(const std::list<dimenvue::backend::ScanViewPtr> &list)
+{
+    if (list.size()) {
+        auto ret = d->backend.getScanList()->uploadAsync(list);
+        d->monitor->uploadScan(std::move(ret));
+    }
+}
+
+void DimenvueDB::synchronize()
+{
+    auto ret = d->backend.getScanList()->synchronizeAllScansAsync();
+
+    d->monitor->synchronizeAllScan(std::move(ret));
+}
+
 float DimenvueDB::usageTB() const
 {
     return d->usageTB;

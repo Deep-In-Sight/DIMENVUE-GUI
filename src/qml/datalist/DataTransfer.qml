@@ -27,6 +27,15 @@ Item {
     property real ratio: progress/100.0
     property bool complete: progress == 100
 
+    Connections {
+        target: monitor
+        onUploadScanDone: {
+            if (value) {
+                modal.unload2("DataTransfer")
+            }
+        }
+    }
+
     Timer {        
         interval: 100
         running: true

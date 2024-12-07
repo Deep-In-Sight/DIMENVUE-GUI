@@ -26,7 +26,8 @@ Item {
             tr_DENSITY = tr(STRING.STR_DENSITY)
             tr_DATA_UPDATE = tr(STRING.STR_DATA_UPDATE)
         }
-    }
+    }    
+
     //-------------------------------------------------------------------------
 
     property string date: db.scanTime //"2024-11-27"
@@ -179,8 +180,7 @@ Item {
                     buttonText: tr_DATA_UPDATE
                     onClicked: {
                         db.saveView()
-
-                        console.log(buttonText + " pressed.")
+                        db.uploadCurrentView()
                         modal.load("qrc:/qml/datalist/DataTransfer.qml", 0, 0)
                     }
                 }
