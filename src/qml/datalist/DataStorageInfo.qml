@@ -25,6 +25,7 @@ Item {
 
     property real usage
     property real usageByTB: usage / 1000.0
+    property real guageWidth: 1642 * usageByTB
 
     Rectangle {
         width: 2270; height: 96
@@ -65,17 +66,20 @@ Item {
             Rectangle {
                 id: rect
 
-                width: 400
+                width: guageWidth
                 height: 36
                 anchors.verticalCenter: parent.verticalCenter
                 radius: height/2
                 color: "#0C1A2A"
 
                 LinearGradient {
+                    id: guage
+
                     anchors.fill: parent
 
                     start: Qt.point(0,0)
                     end: Qt.point(rect.width, rect.height)
+                    visible: false
 
                     gradient: Gradient {
                         GradientStop { position: 0.0; color: "#802079FF" }
@@ -83,6 +87,17 @@ Item {
                         GradientStop { position: 0.5; color: "#802079FF" }
                         GradientStop { position: 0.75; color: "#804A5058" }
                     }
+                }
+                Rectangle {
+                    id: mask
+                    anchors.fill: rect
+                    radius: height/2
+                    color: "#0C1A2A"
+                }
+                OpacityMask {
+                    anchors.fill: guage
+                    source: guage
+                    maskSource: mask
                 }
 
                 Row {
@@ -108,6 +123,7 @@ Item {
                     }
                 }
             }
+
         }
         Row {
             id: frame_157
