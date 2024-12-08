@@ -16,8 +16,11 @@ Rectangle {
     signal accepted()
 
     function clear() {
-        input.text = ""
+        input.clear()
         input.focus = false
+    }
+    function clearInput() {
+        input.clear()
     }
     function setFocus() {
         input.forceActiveFocus()

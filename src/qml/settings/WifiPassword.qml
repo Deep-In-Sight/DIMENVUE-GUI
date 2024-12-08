@@ -17,6 +17,10 @@ Item {
     function showOkButton(show) {
         frame_8188.visible = show
     }
+    function clearInput() {
+        textField.clear()
+    }
+
     Connections {
         target: monitor
         onConnectWifiDone: {
@@ -53,6 +57,8 @@ Item {
                     showOkButton(true)
                 } else {
                     app.showKeyboard()
+                    textField.clearInput()
+                    showOkButton(false)
                 }
             }
             onAccepted: {

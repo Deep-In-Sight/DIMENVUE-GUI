@@ -42,6 +42,7 @@ Item {
         app.hideKeyboard()
         phase = 1
         wifiPassword.showOkButton(false)
+        wifiPassword.clearInput()
     }
 
     Item {
