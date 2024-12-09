@@ -1,8 +1,9 @@
-#include <QGuiApplication>
-#include <QQuickView>
-#include <QOgreItem.h>
 #include <ImGuiItem.h>
+#include <OpenGLItem.h>
 #include <OverlayDrawer.h>
+#include <QGuiApplication>
+#include <QOgreItem.h>
+#include <QQuickView>
 
 int main(int argc, char *argv[])
 {
@@ -10,6 +11,11 @@ int main(int argc, char *argv[])
 
     qmlRegisterType<QOgreItem>("OgreComponents", 1, 0, "QOgreItem");
     qmlRegisterType<ImGuiItem>("OgreComponents", 1, 0, "ImGuiItem");
+    qmlRegisterType<OpenGLItem>("OgreComponents", 1, 0, "OpenGLItem");
+
+    QSurfaceFormat format;
+    format.setSwapInterval(0); // disable vsync
+    QSurfaceFormat::setDefaultFormat(format);
 
     const QUrl url("qrc:/main.qml");
     QQuickView *view = new QQuickView();

@@ -19,11 +19,20 @@ Rectangle {
         anchors.fill: parent
         spacing: 20
 
-        QOgreItem {
+        // QOgreItem {
+        //     anchors.horizontalCenter: parent.horizontalCenter
+        //     id: customImageNode
+        //     width: parent.width
+        //     height: width * 0.75
+        // }
+
+        OpenGLItem {
+            id: glItem
             anchors.horizontalCenter: parent.horizontalCenter
-            id: customImageNode
             width: parent.width
             height: width * 0.75
+            visible: true
+            z: 0
         }
 
         Button {

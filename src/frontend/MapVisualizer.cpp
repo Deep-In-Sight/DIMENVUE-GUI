@@ -1,33 +1,51 @@
 #include <MapVisualizer.h>
+#include <pcl/io/pcd_io.h>
 #include <pcl/octree/octree.h>
 #include <stack>
 
 #define DEBUG
 
-struct MapVisualizer::Impl
-{
-    int x; // void addPointCloud(PointCloudXYZ::Ptr cloud);
-};
-
 MapVisualizer::MapVisualizer()
 {
-    m_impl = std::make_unique<Impl>();
 }
 
 MapVisualizer::~MapVisualizer() = default;
 
-Ogre::SceneNode *addPointCloud(PointCloudXYZ::ConstPtr cloud, const pcl::Indices &indices = pcl::Indices(), Ogre::SceneNode *node = nullptr)
+template <typename PointCloudT>
+Ogre::SceneNode *addPointCloud(typename PointCloudT::ConstPtr cloud, const pcl::Indices &indices = pcl::Indices(),
+                               Ogre::SceneNode *node = nullptr)
 {
+    using PointT = typename PointCloudT::PointType;
+    constexpr bool hasColor = pcl::traits::has_color<PointT>();
+
     auto root = OgreEngine::getInstance()->getRoot();
     auto sm = root->getSceneManager("MySceneManager");
     auto mo = sm->createManualObject();
-    mo->begin("BaseWhite", Ogre::RenderOperation::OT_POINT_LIST);
+    std::string sMatName = "PointCloudMaterial";
+
+    Ogre::MaterialManager &matMgr = Ogre::MaterialManager::getSingleton();
+    if (!matMgr.resourceExists(sMatName))
+    {
+        Ogre::MaterialPtr pMaterial = matMgr.create(sMatName, Ogre::ResourceGroupManager::DEFAULT_RESOURCE_GROUP_NAME);
+        pMaterial->getTechnique(0)->setLightingEnabled(false);
+        pMaterial->getTechnique(0)->getPass(0)->setSceneBlending(Ogre::SBT_TRANSPARENT_ALPHA);
+        pMaterial->getTechnique(0)->getPass(0)->setVertexColourTracking(Ogre::TVC_EMISSIVE);
+    }
+
+    mo->begin(sMatName, Ogre::RenderOperation::OT_POINT_LIST);
     if (indices.empty())
     {
         for (const auto &point : cloud->points)
         {
             mo->position(point.x, point.y, point.z);
-            mo->colour(1, 1, 1);
+            if constexpr (hasColor)
+            {
+                mo->colour(point.r / 255.0, point.g / 255.0, point.b / 255.0);
+            }
+            else
+            {
+                mo->colour(1, 1, 1);
+            }
         }
     }
     else
@@ -36,7 +54,14 @@ Ogre::SceneNode *addPointCloud(PointCloudXYZ::ConstPtr cloud, const pcl::Indices
         {
             auto &point = cloud->points[i];
             mo->position(point.x, point.y, point.z);
-            mo->colour(1, 1, 1);
+            if constexpr (hasColor)
+            {
+                mo->colour(point.r / 255.0, point.g / 255.0, point.b / 255.0);
+            }
+            else
+            {
+                mo->colour(1, 1, 1);
+            }
         }
     }
     mo->end();
@@ -45,12 +70,37 @@ Ogre::SceneNode *addPointCloud(PointCloudXYZ::ConstPtr cloud, const pcl::Indices
     return n;
 }
 
-Ogre::SceneNode *createNodeTree(OctreeXYZ &octree);
-void createSceneNodesFromOctree(OctreeXYZ &octree, Ogre::SceneNode *rootSceneNode);
+template <typename PointCloudT> Ogre::SceneNode *addOctreeCloud(const typename PointCloudT::ConstPtr cloud)
+{
+    using PointT = typename PointCloudT::PointType;
+    using OctreeT = pcl::octree::OctreePointCloud<PointT>;
+    OctreeT octree(1.0);
+    octree.setInputCloud(cloud);
+    octree.addPointsFromInputCloud();
+
+    auto root = OgreEngine::getInstance()->getRoot();
+    auto sm = root->getSceneManager("MySceneManager");
+    auto n = sm->getRootSceneNode()->createChildSceneNode();
+    createSceneNodesFromOctree<OctreeT>(octree, n);
+    return n;
+}
+
+template <typename OctreeT> void createSceneNodesFromOctree(OctreeT &octree, Ogre::SceneNode *rootSceneNode)
+{
+    using PointCloudT = typename OctreeT::PointCloud;
+    for (auto it = octree.leaf_depth_end(); it != octree.leaf_depth_end(); it++)
+    {
+        auto node = *it;
+        auto pointIndices = it.getLeafContainer().getPointIndicesVector();
+        auto n = rootSceneNode->createChildSceneNode();
+        addPointCloud<PointCloudT>(octree.getInputCloud(), pointIndices, n);
+    }
+}
 
 Ogre::SceneNode *MapVisualizer::addRandomCloud(int numPoints, float scale)
 {
-    PointCloudXYZ::Ptr cloud(new PointCloudXYZ);
+    using PointCloudT = pcl::PointCloud<pcl::PointXYZ>;
+    PointCloudT::Ptr cloud(new PointCloudT);
     cloud->points.resize(numPoints);
     for (auto &point : cloud->points)
     {
@@ -61,69 +111,17 @@ Ogre::SceneNode *MapVisualizer::addRandomCloud(int numPoints, float scale)
         point.z = p.z() * scale;
     }
 
-    return addPointCloud(cloud);
-
-    // put the cloud into an octree
-    // OctreeXYZ octree(0.5);
-    // octree.setInputCloud(cloud);
-    // octree.addPointsFromInputCloud();
-
-    // return createNodeTree(octree);
+    return addOctreeCloud<PointCloudT>(cloud);
 }
 
-Ogre::SceneNode *createNodeTree(OctreeXYZ &octree)
+Ogre::SceneNode *MapVisualizer::loadPCDFile(const std::string &path)
 {
-    auto root = OgreEngine::getInstance()->getRoot();
-    auto sm = root->getSceneManager("MySceneManager");
-    auto treeRoot = sm->getRootSceneNode()
-                        ->createChildSceneNode();
-    treeRoot->showBoundingBox(true);
-
-    createSceneNodesFromOctree(octree, treeRoot);
-
-    return treeRoot;
-}
-
-void createSceneNodesFromOctree(OctreeXYZ &octree, Ogre::SceneNode *rootSceneNode)
-{
-    DFSIterator it = octree.depth_begin();
-    DFSIterator itEnd = octree.depth_end();
-
-    // Stack to keep track of parent SceneNodes at each depth
-    std::stack<Ogre::SceneNode *> nodeStack;
-    nodeStack.push(rootSceneNode); // Start with the root scene node
-
-    int currentDepth = 0;
-
-    while (it != itEnd)
+    using PointCloudT = pcl::PointCloud<pcl::PointXYZRGB>;
+    PointCloudT::Ptr cloud(new PointCloudT);
+    if (pcl::io::loadPCDFile(path, *cloud) == -1)
     {
-        auto node = *it;
-        auto depth = it.getCurrentOctreeDepth();
-
-        // Pop the stack when moving up in depth
-        while (currentDepth > depth)
-        {
-            nodeStack.pop();
-            currentDepth--;
-        }
-
-        // Create a new SceneNode for the current octree node
-        Ogre::SceneNode *parentSceneNode = nodeStack.top();
-        Ogre::SceneNode *currentSceneNode = parentSceneNode->createChildSceneNode();
-        // currentSceneNode->showBoundingBox(true);
-
-        if (depth > currentDepth)
-        {
-            nodeStack.push(currentSceneNode);
-            currentDepth = depth;
-        }
-
-        if (node->getNodeType() == pcl::octree::LEAF_NODE)
-        {
-            auto pointIndices = it.getLeafContainer().getPointIndicesVector();
-            addPointCloud(octree.getInputCloud(), pointIndices, currentSceneNode);
-        }
-
-        ++it; // Move to the next octree node
+        throw std::runtime_error("Failed to load PCD file");
     }
+
+    return addOctreeCloud<PointCloudT>(cloud);
 }

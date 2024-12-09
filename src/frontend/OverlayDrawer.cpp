@@ -1,13 +1,19 @@
 #include <OverlayDrawer.h>
 #define IMGUI_DEFINE_MATH_OPERATORS
+#include <MapVisualizer.h>
+#include <OgreEngine.h>
+#include <QDebug>
+#include <QFileDialog>
+#include <QFileInfo>
 #include <imgui.h>
 #include <imgui_internal.h>
 #include <iostream>
-#include <OgreEngine.h>
-#include <MapVisualizer.h>
 
 struct OverlayDrawer::Impl
 {
+    Impl(OverlayDrawer *parent) : parent(parent)
+    {
+    }
     /***
      * @brief Check if the overlay is enabled
      * enable/disable the entire imgui overlay by long pressing for 3seconds in the 10% top left corner of the window
@@ -42,7 +48,7 @@ struct OverlayDrawer::Impl
                 ImGui::Text("Materials:");
                 for (auto &mat : m_materials)
                 {
-                    ImGui::Text(mat.c_str());
+                    ImGui::Text("%s", mat.c_str());
                 }
             }
         }
@@ -59,9 +65,27 @@ struct OverlayDrawer::Impl
             ImGui::DragFloat("scale", &scale, 0.1, 0.1, 100);
             if (ImGui::Button("Add random cloud"))
             {
-                MapVisualizer *viz = MapVisualizer::getInstance();
+                auto *viz = MapVisualizer::getInstance();
                 auto node = viz->addRandomCloud(numPoints * pow(10, numPointLog), scale);
                 pcds.push_back({node, true});
+            }
+
+            static char path[1024] = "<>";
+            ImGui::Text("%s", path);
+            ImGui::SameLine();
+            if (ImGui::Button("Browse"))
+            {
+            }
+            ImGui::SameLine();
+            if (ImGui::Button("OK"))
+            {
+                QFileInfo info(path);
+                if (info.exists())
+                {
+                    auto *viz = MapVisualizer::getInstance();
+                    auto node = viz->loadPCDFile(path);
+                    pcds.push_back({node, true});
+                }
             }
 
             ImGui::Text("Point clouds:");
@@ -101,11 +125,12 @@ struct OverlayDrawer::Impl
 
     bool overlay_enable = false;
     std::vector<std::string> m_materials;
+    OverlayDrawer *parent;
 };
 
 OverlayDrawer::OverlayDrawer(ImGuiItem *parent) : ImGuiOverlay(parent)
 {
-    m_impl = std::make_unique<Impl>();
+    m_impl = std::make_unique<Impl>(this);
 }
 
 OverlayDrawer::~OverlayDrawer() = default;

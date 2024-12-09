@@ -3,14 +3,15 @@
 
 class OverlayDrawer : public ImGuiOverlay
 {
-public:
+    Q_OBJECT
+  public:
     OverlayDrawer(ImGuiItem *parent);
     ~OverlayDrawer();
 
-public slots:
+  public slots:
     void onUpdateImGui() override;
 
-private:
+  private:
     struct Impl;
     std::unique_ptr<Impl> m_impl;
 };

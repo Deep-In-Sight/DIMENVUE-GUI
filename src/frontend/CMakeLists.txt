@@ -1,15 +1,15 @@
 add_subdirectory(modules)
 
-find_package(
-  Qt5 5.15
-  COMPONENTS Quick Qml
-  REQUIRED)
-find_package(OGRE REQUIRED COMPONENTS Bites RTShaderSystem)
-find_package(PCL REQUIRED COMPONENTS common octree)
+# use c++20
+set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-set(OGRE_LIBS OgreBites OgreRTShaderSystem GLX)
-set(OGRE_EXTRA_INCLUDES ${OGRE_INCLUDE_DIRS}/RenderSystems/GL3Plus)
-set(QT5_LIBS Qt5::Quick Qt5::Qml qt_imgui_quick)
+find_package(Qt5 5.15 REQUIRED COMPONENTS Quick Qml OpenGL Widgets)
+find_package(OGRE REQUIRED COMPONENTS Bites RTShaderSystem)
+find_package(PCL REQUIRED COMPONENTS common octree io)
+find_package(glm REQUIRED)
+find_package(GLEW REQUIRED)
+
 set(APP_SOURCES
     main.cpp
     QOgreItem.cpp
@@ -17,19 +17,27 @@ set(APP_SOURCES
     CameraController.cpp
     ViewportGrid.cpp
     OverlayDrawer.cpp
-    MapVisualizer.cpp)
+    MapVisualizer.cpp
+    OpenGLItem.cpp
+    RasterizerRenderer.cpp)
+
+set(APP_LIBS
+    OgreBites
+    OgreRTShaderSystem
+    Qt5::Quick
+    Qt5::Qml
+    Qt5::OpenGL
+    Qt5::Widgets
+    qt_imgui_quick
+    GLX
+    ${PCL_LIBRARIES})
+
+set(APP_INCLUDES ${CMAKE_CURRENT_SOURCE_DIR} ${OGRE_EXTRA_INCLUDES})
+
 add_executable(SimpleQtQuickApp ${APP_SOURCES})
-target_link_libraries(SimpleQtQuickApp PRIVATE ${OGRE_LIBS} ${QT5_LIBS}
-                                               ${PCL_LIBRARIES})
-target_include_directories(SimpleQtQuickApp PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
-target_include_directories(SimpleQtQuickApp PRIVATE ${OGRE_EXTRA_INCLUDES})
-target_include_directories(SimpleQtQuickApp PRIVATE ${PCL_INCLUDE_DIRS})
+target_link_libraries(SimpleQtQuickApp PRIVATE ${APP_LIBS})
+target_include_directories(SimpleQtQuickApp PRIVATE ${APP_INCLUDES})
 
 qt5_add_resources(QML_RESOURCES resource.qrc)
 target_sources(SimpleQtQuickApp PRIVATE ${QML_RESOURCES})
 set_target_properties(SimpleQtQuickApp PROPERTIES AUTOMOC ON AUTORCC ON)
-
-add_executable(test test.cpp)
-target_link_libraries(test PRIVATE ${OGRE_LIBS} ${QT5_LIBS})
-target_include_directories(test PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
-target_include_directories(test PRIVATE ${OGRE_EXTRA_INCLUDES})
