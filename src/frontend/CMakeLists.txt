@@ -9,6 +9,7 @@ find_package(OGRE REQUIRED COMPONENTS Bites RTShaderSystem)
 find_package(PCL REQUIRED COMPONENTS common octree io)
 find_package(glm REQUIRED)
 find_package(GLEW REQUIRED)
+find_package(OpenGL REQUIRED)
 
 set(APP_SOURCES
     main.cpp
@@ -22,6 +23,7 @@ set(APP_SOURCES
     RasterizerRenderer.cpp)
 
 set(APP_LIBS
+    OpenGL::GL
     OgreBites
     OgreRTShaderSystem
     Qt5::Quick
@@ -30,6 +32,7 @@ set(APP_LIBS
     Qt5::Widgets
     qt_imgui_quick
     GLX
+    GLEW::GLEW
     ${PCL_LIBRARIES})
 
 set(APP_INCLUDES ${CMAKE_CURRENT_SOURCE_DIR} ${OGRE_EXTRA_INCLUDES})

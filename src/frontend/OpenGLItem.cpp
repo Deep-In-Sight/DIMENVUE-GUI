@@ -1,5 +1,6 @@
 #include <OpenGLItem.h>
 #include <QMimeData>
+#include <QOpenGLContext>
 #include <QQuickWindow>
 #include <RasterizerRenderer.h>
 
