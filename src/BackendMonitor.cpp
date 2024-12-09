@@ -17,23 +17,20 @@ public:
         , ret(std::move(f))
     {}
 
-    virtual QString name() const {
+    QString name() const {
         return className;
     }
-    virtual QVariant value() {
+    QVariant value() {
         auto status = ret.wait_for(std::chrono::milliseconds(1));
         if (status == std::future_status::ready) {
             auto result = ret.get();
 
-            qDebug() << "userLogin -> " << result;
-
             return QVariant{result};
         }
-        qDebug() << "future_status not ready!!!";
 
         return QVariant{};
     }
-    virtual void call(QObject* monitorObject, QVariant value) {
+    void call(QObject* monitorObject, QVariant value) {
         auto methodName = className.toStdString() + "Done";
 
         if (!QMetaObject::invokeMethod(monitorObject, methodName.c_str(), Qt::DirectConnection, Q_ARG(bool, value.toBool()))) {
@@ -64,6 +61,8 @@ public:
                     m->call(q, v);
 
                     monitorItems.removeOne(m);
+
+                    delete m;
                 }
             }
             if (0 == monitorItems.count()) {
@@ -71,6 +70,13 @@ public:
                 qDebug() << "Monitor timer stop !!!";
             }
         });
+    }
+    ~BackendMonitorPrivate()
+    {
+        for (auto* m : monitorItems) {
+            qDebug() << "destructor: " << m->name();
+            delete m;
+        }
     }
 
     bool add(Monitor* monitor) {
