@@ -79,7 +79,7 @@ Item {
         MouseArea {
             anchors.fill: parent
             onClicked: {
-                mainLoader.source = "../settings/LanguageSelection.qml"
+                mainLoader.source = "../settings/SettingsMain.qml"
                 app.hideKeyboard()
             }
         }
