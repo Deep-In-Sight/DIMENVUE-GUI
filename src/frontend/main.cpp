@@ -2,14 +2,14 @@
 #include <OpenGLItem.h>
 #include <OverlayDrawer.h>
 #include <QGuiApplication>
-#include <QOgreItem.h>
+// #include <QOgreItem.h>
 #include <QQuickView>
 
 int main(int argc, char *argv[])
 {
     QGuiApplication app(argc, argv);
 
-    qmlRegisterType<QOgreItem>("OgreComponents", 1, 0, "QOgreItem");
+    // qmlRegisterType<QOgreItem>("OgreComponents", 1, 0, "QOgreItem");
     qmlRegisterType<ImGuiItem>("OgreComponents", 1, 0, "ImGuiItem");
     qmlRegisterType<OpenGLItem>("OgreComponents", 1, 0, "OpenGLItem");
 

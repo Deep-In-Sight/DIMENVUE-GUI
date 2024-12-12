@@ -1,121 +1,212 @@
 #include <CameraController.h>
 #include <iostream>
 
-CameraController::CameraController(Ogre::SceneNode *cameraNode)
+CameraController::CameraController()
 {
-    // cameraNode = sm->getRootSceneNode()->createChildSceneNode();
-    // cameraYawNode = cameraNode->createChildSceneNode();
-    // cameraPitchNode = cameraYawNode->createChildSceneNode();
-    // cameraRollNode = cameraPitchNode->createChildSceneNode();
-    // cameraRollNode->attachObject(camera);
-    // m_moving = false;
-    this->cameraNode = cameraNode;
+    reset();
 }
 
 CameraController::~CameraController() = default;
 
-bool CameraController::mousePressed(const OgreBites::MouseButtonEvent &evt)
+void CameraController::reset()
 {
-    if (evt.button == OgreBites::BUTTON_LEFT)
-    {
-        m_orienting = true;
-    }
-    else if (evt.button == OgreBites::BUTTON_RIGHT)
-    {
-        m_moving = true;
-    }
-    return OgreBites::InputListener::mousePressed(evt);
-}
-
-bool CameraController::mouseReleased(const OgreBites::MouseButtonEvent &evt)
-{
-    m_orienting = false;
     m_moving = false;
-    return OgreBites::InputListener::mouseReleased(evt);
+    m_orienting = false;
+    m_rSpeed = 0.001;
+    m_tSpeed = 0.01;
+    m_zSpeed = 0.1;
+    m_yawLocked = false;
+    m_fingerIds = Eigen::Vector2i(-1, -1);
+    m_fingerPositions[0] = Eigen::Vector2d(0, 0);
+    m_fingerPositions[1] = Eigen::Vector2d(0, 0);
+    m_lastPinchDistance = 0;
+    m_lastPinchPosition = Eigen::Vector2d(0, 0);
+    m_position = Eigen::Vector3d(0, 0, 0);
+    m_quaternion = Eigen::Quaterniond(1, 0, 0, 0);
 }
 
-bool CameraController::mouseMoved(const OgreBites::MouseMotionEvent &evt)
+void CameraController::mousePressed(MouseButton button, float x, float y)
 {
+    m_orienting = (button == LEFT);
+    m_moving = (button == RIGHT);
+    m_lastMousePosition = Eigen::Vector2i(x, y);
+}
+
+void CameraController::mouseReleased(MouseButton button)
+{
+    m_orienting = (button == LEFT);
+    m_moving = (button == RIGHT);
+}
+
+void CameraController::mouseMoved(float x, float y)
+{
+    auto dx = x - m_lastMousePosition[0];
+    auto dy = y - m_lastMousePosition[1];
+    m_lastMousePosition = Eigen::Vector2i(x, y);
     if (m_orienting)
     {
-        float yaw = -evt.xrel * 0.001;
-        float pitch = -evt.yrel * 0.001;
-        cameraNode->yaw(Ogre::Radian(yaw), Ogre::Node::TS_WORLD);
-        cameraNode->pitch(Ogre::Radian(pitch), Ogre::Node::TS_WORLD);
+        auto pitch = -dx * m_rSpeed;
+        auto roll = -dy * m_rSpeed;
+        std::cout << "pitch: " << pitch << " roll: " << roll << std::endl;
+        rotateLocal(Eigen::Vector3d(0, pitch, roll));
     }
     if (m_moving)
     {
-        Ogre::Vector2 dxdy(evt.xrel, evt.yrel);
-        dxdy *= 0.01;
-        cameraNode->translate(Ogre::Vector3(-dxdy[0], dxdy[1], 0), Ogre::Node::TS_LOCAL);
+        translateLocal(Eigen::Vector3d(-dx * m_tSpeed, dy * m_tSpeed, 0));
     }
-    return OgreBites::InputListener::mouseMoved(evt);
 }
 
-bool CameraController::mouseWheelRolled(const OgreBites::MouseWheelEvent &evt)
+void CameraController::mouseWheelRolled(float yangle)
 {
-    auto dz = evt.y;
-    cameraNode->translate(Ogre::Vector3(0, 0, dz), Ogre::Node::TS_LOCAL);
-    return OgreBites::InputListener::mouseWheelRolled(evt);
+    float dz = (yangle > 0) ? 1 : -1;
+    translateLocal(Eigen::Vector3d(0, 0, dz * m_zSpeed));
 }
 
-bool CameraController::touchPressed(const OgreBites::TouchFingerEvent &evt)
+void CameraController::touchPressed(int fingerId, float x, float y)
 {
-    auto found = std::find_if(touchEvents.begin(), touchEvents.end(), [evt](const OgreBites::TouchFingerEvent &e)
-                              { return e.fingerId == evt.fingerId; });
-    if (found == touchEvents.end())
+    if (m_fingerIds[0] == -1)
     {
-        touchEvents.push_back(evt);
+        m_fingerIds[0] = fingerId;
+        m_fingerPositions[0] = Eigen::Vector2d(x, y);
     }
-    if (touchEvents.size() == 2)
+    else if (m_fingerIds[1] == -1)
     {
-        Ogre::Vector2 p1(touchEvents[0].x, touchEvents[0].y);
-        Ogre::Vector2 p2(touchEvents[1].x, touchEvents[1].y);
-        m_lastPinchDistance = p1.distance(p2);
-        m_lastPinchPosition = (p1 + p2) / 2;
+        m_fingerIds[1] = fingerId;
+        m_fingerPositions[1] = Eigen::Vector2d(x, y);
+        m_lastPinchDistance = (m_fingerPositions[0] - m_fingerPositions[2]).norm();
+        m_lastPinchPosition = (m_fingerPositions[0] + m_fingerPositions[2]) / 2;
     }
-
-    return OgreBites::InputListener::touchPressed(evt);
 }
 
-bool CameraController::touchReleased(const OgreBites::TouchFingerEvent &evt)
+void CameraController::touchReleased(int fingerId)
 {
-    touchEvents.erase(std::remove_if(touchEvents.begin(), touchEvents.end(), [evt](const OgreBites::TouchFingerEvent &e)
-                                     { return e.fingerId == evt.fingerId; }),
-                      touchEvents.end());
-    return OgreBites::InputListener::touchReleased(evt);
+    if (m_fingerIds[0] == fingerId)
+    {
+        m_fingerIds[0] = -1;
+    }
+    else if (m_fingerIds[1] == fingerId)
+    {
+        m_fingerIds[1] = -1;
+    }
 }
 
-bool CameraController::touchMoved(const OgreBites::TouchFingerEvent &evt)
+void CameraController::touchMoved(int fingerId, float dx, float dy)
 {
     // update the stored touchEvents
-    auto found = std::find_if(touchEvents.begin(), touchEvents.end(), [evt](const OgreBites::TouchFingerEvent &e)
-                              { return e.fingerId == evt.fingerId; });
-    if (found != touchEvents.end())
+    if (m_fingerIds[0] == fingerId)
     {
-        *found = evt;
+        m_fingerPositions[0] += Eigen::Vector2d(dx, dy);
+    }
+    else if (m_fingerIds[1] == fingerId)
+    {
+        m_fingerPositions[1] += Eigen::Vector2d(dx, dy);
     }
 
-    if (touchEvents.size() == 1)
+    // single touch
+    if (m_fingerIds[0] != -1 && m_fingerIds[1] == -1)
     {
-        // single touch to change camera orientation
-        float yaw = -evt.dx * 0.001;
-        float pitch = -evt.dy * 0.001;
-        cameraNode->yaw(Ogre::Radian(yaw), Ogre::Node::TS_WORLD);
-        cameraNode->pitch(Ogre::Radian(pitch), Ogre::Node::TS_WORLD);
+        rotateLocal(Eigen::Vector3d(-dx * m_rSpeed, -dy * m_rSpeed, 0));
     }
-    else if (touchEvents.size() == 2)
+
+    // two finger touch
+    if (m_fingerIds[0] != -1 && m_fingerIds[1] != -1)
     {
-        // two finger touch to move camera
-        Ogre::Vector2 p1(touchEvents[0].x, touchEvents[0].y);
-        Ogre::Vector2 p2(touchEvents[1].x, touchEvents[1].y);
-        auto d = p1.distance(p2);
+        Eigen::Vector2d p1 = m_fingerPositions[0];
+        Eigen::Vector2d p2 = m_fingerPositions[1];
+        auto d = (p1 - p2).norm();
         auto p = (p1 + p2) / 2;
-        auto dz = (m_lastPinchDistance - d) * 0.05;
-        auto dxdy = (m_lastPinchPosition - p) * 0.05;
-        cameraNode->translate(Ogre::Vector3(dxdy[0], -dxdy[1], dz), Ogre::Node::TS_LOCAL);
+        auto dz = (m_lastPinchDistance - d);
+        auto dxdy = (m_lastPinchPosition - p);
         m_lastPinchDistance = d;
         m_lastPinchPosition = p;
+        translateLocal(Eigen::Vector3d(-dxdy[0] * m_tSpeed, -dxdy[1] * m_tSpeed, dz * m_zSpeed));
     }
-    return OgreBites::InputListener::touchMoved(evt);
+}
+
+void CameraController::lockYaw(bool enable)
+{
+    m_yawLocked = enable;
+}
+
+void CameraController::translateLocal(Eigen::Vector3d translation)
+{
+    m_position += m_quaternion * translation;
+    update();
+}
+
+void CameraController::rotateLocal(Eigen::Vector3d angles)
+{
+    Eigen::Quaterniond yaw(Eigen::AngleAxisd(angles[0], Eigen::Vector3d::UnitZ()));
+    Eigen::Quaterniond pitch(Eigen::AngleAxisd(angles[1], Eigen::Vector3d::UnitY()));
+    Eigen::Quaterniond roll(Eigen::AngleAxisd(angles[2], Eigen::Vector3d::UnitX()));
+    Eigen::Quaterniond q;
+    q = (!m_yawLocked) ? yaw * pitch * roll : pitch * roll;
+
+    m_quaternion = m_quaternion * q;
+    m_quaternion.normalize();
+    update();
+}
+
+void CameraController::setPosition(Eigen::Vector3d position)
+{
+    m_position = position;
+    update();
+}
+
+Eigen::Vector3d CameraController::getPosition()
+{
+    return m_position;
+}
+
+void CameraController::setQuaternion(Eigen::Quaterniond quaternion)
+{
+    m_quaternion = quaternion;
+    update();
+}
+
+Eigen::Quaterniond CameraController::getQuaternion()
+{
+    return m_quaternion;
+}
+
+void CameraController::setEuler(Eigen::Vector3d euler)
+{
+    Eigen::Quaterniond q;
+    q = Eigen::AngleAxisd(euler[0], Eigen::Vector3d::UnitZ()) * Eigen::AngleAxisd(euler[1], Eigen::Vector3d::UnitY()) *
+        Eigen::AngleAxisd(euler[2], Eigen::Vector3d::UnitX());
+    m_quaternion = q;
+    update();
+}
+
+Eigen::Vector3d CameraController::getEuler()
+{
+    return m_quaternion.toRotationMatrix().eulerAngles(2, 1, 0);
+}
+
+void CameraController::setLookAt(Eigen::Vector3d target)
+{
+    Eigen::Vector3d forward = (target - m_position).normalized();
+    Eigen::Vector3d backward = -forward;
+    Eigen::Vector3d worldUp = Eigen::Vector3d::UnitY();
+    Eigen::Vector3d right = worldUp.cross(backward).normalized(); // x = y cross z
+    Eigen::Vector3d up = backward.cross(right).normalized();      // y = z cross x
+    Eigen::Matrix3d rot;
+    rot.col(0) = right;    // x
+    rot.col(1) = up;       // y
+    rot.col(2) = backward; // z
+
+    m_quaternion = Eigen::Quaterniond(rot);
+    update();
+}
+
+void CameraController::setSpeed(Eigen::Vector3d speed)
+{
+    m_rSpeed = speed[0];
+    m_tSpeed = speed[1];
+    m_zSpeed = speed[2];
+}
+
+Eigen::Vector3d CameraController::getSpeed()
+{
+    return Eigen::Vector3d(m_rSpeed, m_tSpeed, m_zSpeed);
 }

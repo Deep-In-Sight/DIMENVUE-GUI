@@ -11,16 +11,8 @@ find_package(glm REQUIRED)
 find_package(GLEW REQUIRED)
 find_package(OpenGL REQUIRED)
 
-set(APP_SOURCES
-    main.cpp
-    QOgreItem.cpp
-    OgreEngine.cpp
-    CameraController.cpp
-    ViewportGrid.cpp
-    OverlayDrawer.cpp
-    MapVisualizer.cpp
-    OpenGLItem.cpp
-    RasterizerRenderer.cpp)
+set(APP_SOURCES main.cpp CameraController.cpp OverlayDrawer.cpp OpenGLItem.cpp
+                RasterizerRenderer.cpp global.cpp)
 
 set(APP_LIBS
     OpenGL::GL
@@ -38,7 +30,7 @@ set(APP_LIBS
 set(APP_INCLUDES ${CMAKE_CURRENT_SOURCE_DIR} ${OGRE_EXTRA_INCLUDES})
 
 add_executable(SimpleQtQuickApp ${APP_SOURCES})
-target_link_libraries(SimpleQtQuickApp PRIVATE ${APP_LIBS})
+target_link_libraries(SimpleQtQuickApp PRIVATE ${APP_LIBS} ComputeRasterizerLib)
 target_include_directories(SimpleQtQuickApp PRIVATE ${APP_INCLUDES})
 
 qt5_add_resources(QML_RESOURCES resource.qrc)
