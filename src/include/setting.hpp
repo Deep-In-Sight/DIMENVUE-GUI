@@ -5,6 +5,8 @@
 #include <memory>
 #include <vector>
 #include <future>
+#include <thread>
+
 
 namespace dimenvue
 {
