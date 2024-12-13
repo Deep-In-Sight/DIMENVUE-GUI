@@ -1,0 +1,7 @@
+[submodule "src/frontend/modules/qtimgui"]
+	path = src/frontend/modules/qtimgui
+	url = git@github.com:Deep-In-Sight/qtimgui.git
+[submodule "src/frontend/modules/compute_rasterizer"]
+	path = src/frontend/modules/compute_rasterizer
+	url = git@github.com:Deep-In-Sight/compute_rasterizer.git
+	branch = Cleanup

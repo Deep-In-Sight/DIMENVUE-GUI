@@ -1,0 +1,5 @@
+<RCC>
+    <qresource prefix="/">
+        <file>qml/testpcd/main.qml</file>
+    </qresource>
+</RCC>

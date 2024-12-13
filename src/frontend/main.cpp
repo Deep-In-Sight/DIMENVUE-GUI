@@ -1,8 +1,8 @@
+#include "Dimenvue.h"
+#include <QDebug>
 #include <QGuiApplication>
 #include <QQmlApplicationEngine>
-#include <QDebug>
 #include <QQmlContext>
-#include "Dimenvue.h"
 
 //-window:1024x640 -debug
 
