@@ -109,7 +109,7 @@ struct OverlayDrawer::Impl
         }
         ImGui::End();
     }
-
+#if 0
     void showCameraWindow()
     {
         auto cc = GlobalVar::cameraController;
@@ -133,7 +133,7 @@ struct OverlayDrawer::Impl
         }
         ImGui::End();
     }
-#if 0
+
     void showTestPointCloudWindow()
     {
         if (ImGui::Begin("Test point cloud"))
@@ -195,8 +195,8 @@ struct OverlayDrawer::Impl
         //     return;
         // ImGui::ShowDemoWindow();
         showPerformanceWindow();
-        showCameraWindow();
 #if 0
+        showCameraWindow();
         showTestPointCloudWindow();
 #endif
     }

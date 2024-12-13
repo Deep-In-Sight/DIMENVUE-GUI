@@ -5,13 +5,12 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 find_package(Qt5 5.15 REQUIRED COMPONENTS Quick Qml OpenGL Widgets)
-find_package(PCL REQUIRED COMPONENTS common octree io)
+find_package(PCL REQUIRED COMPONENTS common)
 find_package(glm REQUIRED)
 find_package(GLEW REQUIRED)
 find_package(OpenGL REQUIRED)
 
-set(APP_SOURCES main.cpp CameraController.cpp OverlayDrawer.cpp
-                PointCloudItem.cpp PointCloudQuickRenderer.cpp global.cpp)
+set(APP_SOURCES main.cpp OverlayDrawer.cpp global.cpp)
 
 set(APP_LIBS
     OpenGL::GL
