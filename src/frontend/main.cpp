@@ -1,21 +1,15 @@
 #include <ImGuiItem.h>
-#include <OpenGLItem.h>
 #include <OverlayDrawer.h>
+#include <PointCloudItem.h>
 #include <QGuiApplication>
-// #include <QOgreItem.h>
 #include <QQuickView>
 
 int main(int argc, char *argv[])
 {
     QGuiApplication app(argc, argv);
 
-    // qmlRegisterType<QOgreItem>("OgreComponents", 1, 0, "QOgreItem");
-    qmlRegisterType<ImGuiItem>("OgreComponents", 1, 0, "ImGuiItem");
-    qmlRegisterType<OpenGLItem>("OgreComponents", 1, 0, "OpenGLItem");
-
-    QSurfaceFormat format;
-    format.setSwapInterval(0); // disable vsync
-    QSurfaceFormat::setDefaultFormat(format);
+    qmlRegisterType<ImGuiItem>("DimenvueComponents", 1, 0, "ImGuiItem");
+    qmlRegisterType<PointCloudItem>("DimenvueComponents", 1, 0, "OpenGLItem");
 
     const QUrl url("qrc:/main.qml");
     QQuickView *view = new QQuickView();

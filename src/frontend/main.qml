@@ -1,6 +1,6 @@
 import QtQuick 2.12          
 import QtQuick.Controls 2.5  
-import OgreComponents 1.0
+import DimenvueComponents 1.0
 
 Rectangle {
     visible: true

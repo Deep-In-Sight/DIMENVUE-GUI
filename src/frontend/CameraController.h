@@ -1,8 +1,10 @@
 #pragma once
 
-#include <Eigen/Core>
-#include <Eigen/Geometry>
+#include <glm/glm.hpp>
+#include <glm/gtc/quaternion.hpp>
 #include <vector>
+
+struct Camera;
 
 class CameraController
 {
@@ -14,8 +16,10 @@ class CameraController
         NONE = 2
     };
 
-    CameraController();
+    CameraController(Camera *camera = nullptr);
     ~CameraController();
+
+    void setCamera(Camera *camera);
 
     void mousePressed(MouseButton button, float x, float y);
     void mouseMoved(float x, float y);
@@ -25,25 +29,29 @@ class CameraController
     void touchMoved(int fingerId, float dx, float dy);
     void touchReleased(int fingerId);
 
-    Eigen::Vector3d getPosition();
-    void setPosition(Eigen::Vector3d position);
-    Eigen::Quaterniond getQuaternion();
-    void setQuaternion(Eigen::Quaterniond quaternion);
-    Eigen::Vector3d getEuler();
-    void setEuler(Eigen::Vector3d euler);
-    void setLookAt(Eigen::Vector3d target);
+    glm::dvec3 getPosition();
+    void setPosition(glm::dvec3 position);
+    glm::dquat getQuaternion();
+    void setQuaternion(glm::dquat quaternion);
+    glm::dvec3 getEuler();
+    void setEuler(glm::dvec3 euler);
+    void setLookAt(glm::dvec3 target);
     // rotate speed, translate speed, zoom speed
-    void setSpeed(Eigen::Vector3d speed);
-    Eigen::Vector3d getSpeed();
+    void setSpeed(glm::dvec3 speed);
+    glm::dvec3 getSpeed();
     void lockYaw(bool enable);
+    void setTopView(glm::dvec3 center, float distance);
+    void setCenterView(glm::dvec3 center);
 
     // add translate to current position in local frame
-    void translateLocal(Eigen::Vector3d translation);
+    void translateLocal(glm::dvec3 translation);
     // yaw, pitch, roll
-    void rotateLocal(Eigen::Vector3d yawpitchroll);
+    void rotateLocal(glm::dvec3 yawpitchroll);
 
     void reset();
-    virtual void update() {};
+    virtual void update();
+
+    Camera *camera;
 
   protected:
     bool m_moving;
@@ -52,11 +60,11 @@ class CameraController
     float m_tSpeed;
     float m_zSpeed;
     bool m_yawLocked;
-    Eigen::Vector2i m_lastMousePosition;
-    Eigen::Vector2i m_fingerIds;
-    Eigen::Vector2d m_fingerPositions[2];
+    glm::ivec2 m_lastMousePosition;
+    glm::ivec2 m_fingerIds;
+    glm::dvec2 m_fingerPositions[2];
     float m_lastPinchDistance;
-    Eigen::Vector2d m_lastPinchPosition;
-    Eigen::Vector3d m_position;
-    Eigen::Quaterniond m_quaternion;
+    glm::dvec2 m_lastPinchPosition;
+    glm::dvec3 m_position;
+    glm::dquat m_quaternion;
 };

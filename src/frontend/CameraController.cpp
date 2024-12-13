@@ -1,12 +1,21 @@
+#include <Camera.h>
 #include <CameraController.h>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/quaternion.hpp>
 #include <iostream>
 
-CameraController::CameraController()
+CameraController::CameraController(Camera *camera) : camera(camera)
 {
     reset();
 }
 
 CameraController::~CameraController() = default;
+
+void CameraController::setCamera(Camera *camera)
+{
+    this->camera = camera;
+    update();
+}
 
 void CameraController::reset()
 {
@@ -16,20 +25,20 @@ void CameraController::reset()
     m_tSpeed = 0.01;
     m_zSpeed = 0.1;
     m_yawLocked = false;
-    m_fingerIds = Eigen::Vector2i(-1, -1);
-    m_fingerPositions[0] = Eigen::Vector2d(0, 0);
-    m_fingerPositions[1] = Eigen::Vector2d(0, 0);
+    m_fingerIds = glm::ivec2(-1, -1);
+    m_fingerPositions[0] = glm::dvec2(0, 0);
+    m_fingerPositions[1] = glm::dvec2(0, 0);
     m_lastPinchDistance = 0;
-    m_lastPinchPosition = Eigen::Vector2d(0, 0);
-    m_position = Eigen::Vector3d(0, 0, 0);
-    m_quaternion = Eigen::Quaterniond(1, 0, 0, 0);
+    m_lastPinchPosition = glm::dvec2(0, 0);
+    m_position = glm::dvec3(0, 0, 0);
+    m_quaternion = glm::dquat(1, 0, 0, 0);
 }
 
 void CameraController::mousePressed(MouseButton button, float x, float y)
 {
     m_orienting = (button == LEFT);
     m_moving = (button == RIGHT);
-    m_lastMousePosition = Eigen::Vector2i(x, y);
+    m_lastMousePosition = glm::ivec2(x, y);
 }
 
 void CameraController::mouseReleased(MouseButton button)
@@ -42,24 +51,23 @@ void CameraController::mouseMoved(float x, float y)
 {
     auto dx = x - m_lastMousePosition[0];
     auto dy = y - m_lastMousePosition[1];
-    m_lastMousePosition = Eigen::Vector2i(x, y);
+    m_lastMousePosition = glm::ivec2(x, y);
     if (m_orienting)
     {
         auto pitch = -dx * m_rSpeed;
         auto roll = -dy * m_rSpeed;
-        std::cout << "pitch: " << pitch << " roll: " << roll << std::endl;
-        rotateLocal(Eigen::Vector3d(0, pitch, roll));
+        rotateLocal(glm::dvec3(0, pitch, roll));
     }
     if (m_moving)
     {
-        translateLocal(Eigen::Vector3d(-dx * m_tSpeed, dy * m_tSpeed, 0));
+        translateLocal(glm::dvec3(-dx * m_tSpeed, dy * m_tSpeed, 0));
     }
 }
 
 void CameraController::mouseWheelRolled(float yangle)
 {
     float dz = (yangle > 0) ? 1 : -1;
-    translateLocal(Eigen::Vector3d(0, 0, dz * m_zSpeed));
+    translateLocal(glm::dvec3(0, 0, dz * m_zSpeed));
 }
 
 void CameraController::touchPressed(int fingerId, float x, float y)
@@ -67,14 +75,14 @@ void CameraController::touchPressed(int fingerId, float x, float y)
     if (m_fingerIds[0] == -1)
     {
         m_fingerIds[0] = fingerId;
-        m_fingerPositions[0] = Eigen::Vector2d(x, y);
+        m_fingerPositions[0] = glm::dvec2(x, y);
     }
     else if (m_fingerIds[1] == -1)
     {
         m_fingerIds[1] = fingerId;
-        m_fingerPositions[1] = Eigen::Vector2d(x, y);
-        m_lastPinchDistance = (m_fingerPositions[0] - m_fingerPositions[2]).norm();
-        m_lastPinchPosition = (m_fingerPositions[0] + m_fingerPositions[2]) / 2;
+        m_fingerPositions[1] = glm::dvec2(x, y);
+        m_lastPinchDistance = glm::distance(m_fingerPositions[0], m_fingerPositions[2]);
+        m_lastPinchPosition = (m_fingerPositions[0] + m_fingerPositions[2]) / 2.0;
     }
 }
 
@@ -95,31 +103,31 @@ void CameraController::touchMoved(int fingerId, float dx, float dy)
     // update the stored touchEvents
     if (m_fingerIds[0] == fingerId)
     {
-        m_fingerPositions[0] += Eigen::Vector2d(dx, dy);
+        m_fingerPositions[0] += glm::dvec2(dx, dy);
     }
     else if (m_fingerIds[1] == fingerId)
     {
-        m_fingerPositions[1] += Eigen::Vector2d(dx, dy);
+        m_fingerPositions[1] += glm::dvec2(dx, dy);
     }
 
     // single touch
     if (m_fingerIds[0] != -1 && m_fingerIds[1] == -1)
     {
-        rotateLocal(Eigen::Vector3d(-dx * m_rSpeed, -dy * m_rSpeed, 0));
+        rotateLocal(glm::dvec3(-dx * m_rSpeed, -dy * m_rSpeed, 0));
     }
 
     // two finger touch
     if (m_fingerIds[0] != -1 && m_fingerIds[1] != -1)
     {
-        Eigen::Vector2d p1 = m_fingerPositions[0];
-        Eigen::Vector2d p2 = m_fingerPositions[1];
-        auto d = (p1 - p2).norm();
-        auto p = (p1 + p2) / 2;
+        glm::dvec2 p1 = m_fingerPositions[0];
+        glm::dvec2 p2 = m_fingerPositions[1];
+        auto d = glm::distance(p1, p2);
+        auto p = (p1 + p2) / 2.0;
         auto dz = (m_lastPinchDistance - d);
         auto dxdy = (m_lastPinchPosition - p);
         m_lastPinchDistance = d;
         m_lastPinchPosition = p;
-        translateLocal(Eigen::Vector3d(-dxdy[0] * m_tSpeed, -dxdy[1] * m_tSpeed, dz * m_zSpeed));
+        translateLocal(glm::dvec3(-dxdy[0] * m_tSpeed, -dxdy[1] * m_tSpeed, dz * m_zSpeed));
     }
 }
 
@@ -128,85 +136,110 @@ void CameraController::lockYaw(bool enable)
     m_yawLocked = enable;
 }
 
-void CameraController::translateLocal(Eigen::Vector3d translation)
+void CameraController::translateLocal(glm::dvec3 translation)
 {
     m_position += m_quaternion * translation;
     update();
 }
 
-void CameraController::rotateLocal(Eigen::Vector3d angles)
+static glm::dquat eulerToQuaternion(glm::dvec3 euler)
 {
-    Eigen::Quaterniond yaw(Eigen::AngleAxisd(angles[0], Eigen::Vector3d::UnitZ()));
-    Eigen::Quaterniond pitch(Eigen::AngleAxisd(angles[1], Eigen::Vector3d::UnitY()));
-    Eigen::Quaterniond roll(Eigen::AngleAxisd(angles[2], Eigen::Vector3d::UnitX()));
-    Eigen::Quaterniond q;
-    q = (!m_yawLocked) ? yaw * pitch * roll : pitch * roll;
+    glm::dquat yaw = glm::angleAxis(euler[0], glm::dvec3(0.0, 0.0, 1.0));
+    glm::dquat pitch = glm::angleAxis(euler[1], glm::dvec3(0.0, 1.0, 0.0));
+    glm::dquat roll = glm::angleAxis(euler[2], glm::dvec3(1.0, 0.0, 0.0));
+    glm::dquat q = yaw * pitch * roll;
+    return glm::normalize(q);
+}
 
-    m_quaternion = m_quaternion * q;
-    m_quaternion.normalize();
+void CameraController::rotateLocal(glm::dvec3 angles)
+{
+    auto q = eulerToQuaternion(angles);
+    m_quaternion = glm::normalize(m_quaternion * q);
     update();
 }
 
-void CameraController::setPosition(Eigen::Vector3d position)
+void CameraController::setPosition(glm::dvec3 position)
 {
     m_position = position;
     update();
 }
 
-Eigen::Vector3d CameraController::getPosition()
+glm::dvec3 CameraController::getPosition()
 {
     return m_position;
 }
 
-void CameraController::setQuaternion(Eigen::Quaterniond quaternion)
+void CameraController::setQuaternion(glm::dquat quaternion)
 {
     m_quaternion = quaternion;
     update();
 }
 
-Eigen::Quaterniond CameraController::getQuaternion()
+glm::dquat CameraController::getQuaternion()
 {
     return m_quaternion;
 }
 
-void CameraController::setEuler(Eigen::Vector3d euler)
+void CameraController::setEuler(glm::dvec3 euler)
 {
-    Eigen::Quaterniond q;
-    q = Eigen::AngleAxisd(euler[0], Eigen::Vector3d::UnitZ()) * Eigen::AngleAxisd(euler[1], Eigen::Vector3d::UnitY()) *
-        Eigen::AngleAxisd(euler[2], Eigen::Vector3d::UnitX());
-    m_quaternion = q;
+    m_quaternion = eulerToQuaternion(euler);
     update();
 }
 
-Eigen::Vector3d CameraController::getEuler()
+glm::dvec3 CameraController::getEuler()
 {
-    return m_quaternion.toRotationMatrix().eulerAngles(2, 1, 0);
+    return glm::eulerAngles(m_quaternion);
 }
 
-void CameraController::setLookAt(Eigen::Vector3d target)
+void CameraController::setLookAt(glm::dvec3 target)
 {
-    Eigen::Vector3d forward = (target - m_position).normalized();
-    Eigen::Vector3d backward = -forward;
-    Eigen::Vector3d worldUp = Eigen::Vector3d::UnitY();
-    Eigen::Vector3d right = worldUp.cross(backward).normalized(); // x = y cross z
-    Eigen::Vector3d up = backward.cross(right).normalized();      // y = z cross x
-    Eigen::Matrix3d rot;
-    rot.col(0) = right;    // x
-    rot.col(1) = up;       // y
-    rot.col(2) = backward; // z
+    glm::dvec3 forward = glm::normalize(target - m_position);
+    glm::dvec3 backward = -forward;
+    glm::dvec3 worldUp = glm::dvec3(0, 1, 0);
+    glm::dvec3 right = glm::normalize(glm::cross(worldUp, backward));
+    glm::dvec3 up = glm::normalize(glm::cross(backward, right));
+    glm::dmat3 rot(right, up, backward);
 
-    m_quaternion = Eigen::Quaterniond(rot);
+    m_quaternion = glm::dquat(rot);
     update();
 }
 
-void CameraController::setSpeed(Eigen::Vector3d speed)
+void CameraController::setSpeed(glm::dvec3 speed)
 {
     m_rSpeed = speed[0];
     m_tSpeed = speed[1];
     m_zSpeed = speed[2];
 }
 
-Eigen::Vector3d CameraController::getSpeed()
+glm::dvec3 CameraController::getSpeed()
 {
-    return Eigen::Vector3d(m_rSpeed, m_tSpeed, m_zSpeed);
+    return glm::dvec3(m_rSpeed, m_tSpeed, m_zSpeed);
+}
+
+void CameraController::setTopView(glm::dvec3 center, float distance)
+{
+    // Position the camera
+    glm::dvec3 cameraPosition = center + glm::dvec3(0, 0, distance);
+    setPosition(cameraPosition);
+    setLookAt(center);
+}
+
+void CameraController::setCenterView(glm::dvec3 center)
+{
+    setPosition(center);
+    setEuler({0, 0, 3.14 / 2});
+}
+
+void CameraController::update()
+
+{
+    if (camera == nullptr)
+    {
+        return;
+    }
+    // construct transform matrix from m_position and m_quaternion
+    glm::dmat4 world = glm::translate(glm::dmat4(), m_position);
+    world *= glm::mat4_cast(m_quaternion);
+    camera->world = world;
+    camera->update();
 }

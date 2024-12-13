@@ -10,8 +10,8 @@ find_package(glm REQUIRED)
 find_package(GLEW REQUIRED)
 find_package(OpenGL REQUIRED)
 
-set(APP_SOURCES main.cpp CameraController.cpp OverlayDrawer.cpp OpenGLItem.cpp
-                RasterizerRenderer.cpp global.cpp)
+set(APP_SOURCES main.cpp CameraController.cpp OverlayDrawer.cpp
+                PointCloudItem.cpp PointCloudQuickRenderer.cpp global.cpp)
 
 set(APP_LIBS
     OpenGL::GL

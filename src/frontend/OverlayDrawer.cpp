@@ -1,11 +1,11 @@
 #include <OverlayDrawer.h>
 #define IMGUI_DEFINE_MATH_OPERATORS
-// #include <MapVisualizer.h>
-// #include <OgreEngine.h>
 #include <CameraController.h>
 #include <QDebug>
 #include <QFileDialog>
 #include <QFileInfo>
+#include <glm/glm.hpp>
+#include <glm/gtc/type_ptr.hpp>
 #include <global.h>
 #include <imgui.h>
 #include <imgui_internal.h>
@@ -119,15 +119,17 @@ struct OverlayDrawer::Impl
         }
         if (ImGui::Begin("camera controller"))
         {
-            Eigen::Vector3f position = cc->getPosition().cast<float>();
-            if (ImGui::DragFloat3("position", position.data(), 0.1))
-                cc->setPosition(position.cast<double>());
-            Eigen::Vector3f euler = cc->getEuler().cast<float>();
-            if (ImGui::DragFloat3("euler", euler.data(), 0.1))
-                cc->setEuler(euler.cast<double>());
-            Eigen::Vector3f speed = cc->getSpeed().cast<float>();
-            if (ImGui::DragFloat3("speed", speed.data(), 0.1))
-                cc->setSpeed(speed.cast<double>());
+            glm::vec3 position = glm::vec3(cc->getPosition());
+            if (ImGui::DragFloat3("position", glm::value_ptr(position), 0.1f))
+                cc->setPosition(glm::dvec3(position));
+
+            glm::vec3 euler = glm::vec3(cc->getEuler());
+            if (ImGui::DragFloat3("euler", glm::value_ptr(euler), 0.1f))
+                cc->setEuler(glm::dvec3(euler));
+
+            glm::vec3 speed = glm::vec3(cc->getSpeed());
+            if (ImGui::DragFloat3("speed", glm::value_ptr(speed), 0.1f))
+                cc->setSpeed(glm::dvec3(speed));
         }
         ImGui::End();
     }
