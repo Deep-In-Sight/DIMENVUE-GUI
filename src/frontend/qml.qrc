@@ -177,5 +177,14 @@
         <file>qml/component/IntroButton.qml</file>
         <file>resources/images/visibility.png</file>
         <file>qml/component/SmallButtonOutlined.qml</file>
+        <file>resources/fonts/Pretendard-Black.otf</file>
+        <file>resources/fonts/Pretendard-Bold.otf</file>
+        <file>resources/fonts/Pretendard-ExtraBold.otf</file>
+        <file>resources/fonts/Pretendard-ExtraLight.otf</file>
+        <file>resources/fonts/Pretendard-Light.otf</file>
+        <file>resources/fonts/Pretendard-Medium.otf</file>
+        <file>resources/fonts/Pretendard-Regular.otf</file>
+        <file>resources/fonts/Pretendard-SemiBold.otf</file>
+        <file>resources/fonts/Pretendard-Thin.otf</file>
     </qresource>
 </RCC>

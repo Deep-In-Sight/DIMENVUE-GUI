@@ -1,8 +1,8 @@
 #ifndef DIMENVUEDB_H
 #define DIMENVUEDB_H
 
+#include "scanList.hpp"
 #include <QObject>
-#include "include/scanList.hpp"
 
 class DimenvueDBPrivate;
 class BackendMonitor;
@@ -11,16 +11,16 @@ class DimenvueDB : public QObject
 {
     Q_OBJECT
 
-    //Status
+    // Status
     Q_PROPERTY(float usageTB READ usageTB NOTIFY usageTBChanged)
     Q_PROPERTY(float totalTB READ totalTB NOTIFY totalTBChanged)
     Q_PROPERTY(int batteryCharge READ batteryCharge NOTIFY batteryChargeChanged)
     Q_PROPERTY(bool wifiConnected READ wifiConnected NOTIFY wifiConnectedChanged)
     Q_PROPERTY(int sensorStatus READ sensorStatus NOTIFY sensorStatusChanged)
     Q_PROPERTY(QString time READ time NOTIFY timeChanged)
-    //Wifi
+    // Wifi
     Q_PROPERTY(QStringList ssidList READ ssidList NOTIFY ssidListChanged)
-    //Setting
+    // Setting
     Q_PROPERTY(int language READ language WRITE setLanguage NOTIFY languageChanged)
     Q_PROPERTY(QString userName READ userName)
     Q_PROPERTY(QString userEmail READ userEmail)
@@ -28,26 +28,26 @@ class DimenvueDB : public QObject
     Q_PROPERTY(QString serialNumber READ serialNumber)
     Q_PROPERTY(QString firmwareVersion READ firmwareVersion)
     Q_PROPERTY(QString currentWifiSSID READ currentWifiSSID)
-    //Sensors
+    // Sensors
     Q_PROPERTY(bool sensorInitialized READ sensorInitialized NOTIFY sensorInitializeChanged)
-    //ScanView
+    // ScanView
     Q_PROPERTY(QString scanName READ scanName)
     Q_PROPERTY(QString scanTime READ scanTime)
 
-public:
-    DimenvueDB(QObject* parent = nullptr);
+  public:
+    DimenvueDB(QObject *parent = nullptr);
     virtual ~DimenvueDB();
 
     Q_INVOKABLE void updateTime();
     Q_INVOKABLE void updateWifi();
-    Q_INVOKABLE void updateModelData(QObject* model);
-    Q_INVOKABLE bool wifiConnect(const QString& ssid, const QString& password);
-    Q_INVOKABLE bool login(const QString& id, const QString& password);
-    Q_INVOKABLE bool createNewScan(const QString& name, QObject* model);
+    Q_INVOKABLE void updateModelData(QObject *model);
+    Q_INVOKABLE bool wifiConnect(const QString &ssid, const QString &password);
+    Q_INVOKABLE bool login(const QString &id, const QString &password);
+    Q_INVOKABLE bool createNewScan(const QString &name, QObject *model);
     Q_INVOKABLE bool initializeSensor();
 
     Q_INVOKABLE void updateScanNameList();
-    Q_INVOKABLE bool isValidScanName(const QString& name) const;
+    Q_INVOKABLE bool isValidScanName(const QString &name) const;
 
     Q_INVOKABLE void zoomIn();
     Q_INVOKABLE void zoomOut();
@@ -58,16 +58,16 @@ public:
     Q_INVOKABLE void resetView();
     Q_INVOKABLE void saveView();
     Q_INVOKABLE void uploadCurrentView();
-    Q_INVOKABLE void uploadCheckedView(const std::list<dimenvue::backend::ScanViewPtr>&);
+    Q_INVOKABLE void uploadCheckedView(const std::list<dimenvue::backend::ScanViewPtr> &);
     Q_INVOKABLE void synchronize();
 
     float usageTB() const;
     float totalTB() const;
     int batteryCharge() const;
     bool wifiConnected() const;
-    int sensorStatus() const;   //0: sleep
-                                //1: initialiing
-                                //2: running
+    int sensorStatus() const; // 0: sleep
+                              // 1: initialiing
+                              // 2: running
     QStringList ssidList() const;
 
     QString time() const;
@@ -84,14 +84,14 @@ public:
     QString scanName() const;
     QString scanTime() const;
 
-    void remove(const std::list<dimenvue::backend::ScanViewPtr>& scanNames);
-    void setCurrentView(dimenvue::backend::ScanViewPtr& scanView);
+    void remove(const std::list<dimenvue::backend::ScanViewPtr> &scanNames);
+    void setCurrentView(dimenvue::backend::ScanViewPtr &scanView);
 
     void emitLanguageChange();
 
     BackendMonitor *monitorObject() const;
 
-Q_SIGNALS:
+  Q_SIGNALS:
     void usageTBChanged();
     void totalTBChanged();
     void batteryChargeChanged();
@@ -102,7 +102,7 @@ Q_SIGNALS:
     void languageChanged(int);
     void sensorInitializeChanged();
 
-private:
+  private:
     QScopedPointer<DimenvueDBPrivate> d;
 };
 

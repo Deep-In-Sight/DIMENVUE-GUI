@@ -1,9 +1,9 @@
 #ifndef SPACEDATAMODEL_H
 #define SPACEDATAMODEL_H
 
+#include "scanList.hpp"
 #include <QAbstractItemModel>
 #include <QScopedPointer>
-#include "include/scanList.hpp"
 
 #define USE_SCANVIEWPTR
 
@@ -13,11 +13,12 @@ class SpaceDataModel : public QAbstractListModel
 {
     Q_OBJECT
 
-public:
-    SpaceDataModel(QObject* parent = nullptr);
+  public:
+    SpaceDataModel(QObject *parent = nullptr);
     virtual ~SpaceDataModel();
 
-    enum RoleNames {
+    enum RoleNames
+    {
         IndexRole = Qt::UserRole,
         SpaceImageRole,
         SpaceNameRole,
@@ -38,10 +39,10 @@ public:
     Q_INVOKABLE void uncheckAll();
     Q_INVOKABLE void removeChecked();
 
-#if defined (USE_SCANVIEWPTR)
-    bool append(dimenvue::backend::ScanViewPtr&, int index = -1);
+#if defined(USE_SCANVIEWPTR)
+    bool append(dimenvue::backend::ScanViewPtr &, int index = -1);
 #else
-    bool append(int index, const QString& name, const QUrl& imageUrl, float area, const QDateTime& scanTime);
+    bool append(int index, const QString &name, const QUrl &imageUrl, float area, const QDateTime &scanTime);
 #endif
     void clear();
     bool remove(int index);
@@ -53,7 +54,7 @@ public:
     QModelIndex parent(const QModelIndex &child) const override;
     QModelIndex index(int row, int column = 0, const QModelIndex &parent = QModelIndex()) const override;
 #endif
-private:
+  private:
     QScopedPointer<SpaceDataModelPrivate> d;
 };
 

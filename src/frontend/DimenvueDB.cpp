@@ -1,52 +1,48 @@
 #include "DimenvueDB.h"
 
-#include <QTime>
 #include <QDebug>
+#include <QTime>
 #include <QTimer>
 #include <QUrl>
 
-#include "include/context.hpp"
-#include "include/systemStatus.hpp"
-#include "include/setting.hpp"
-#include "include/scanList.hpp"
-#include "include/scanView.hpp"
-#include "include/sensors.hpp"
-#include "include/mapVisualizer.hpp"
+#include "context.hpp"
+#include "mapVisualizer.hpp"
+#include "scanList.hpp"
+#include "scanView.hpp"
+#include "sensors.hpp"
+#include "setting.hpp"
+#include "systemStatus.hpp"
 
-#include "SpaceDataModel.h"
 #include "BackendMonitor.h"
+#include "SpaceDataModel.h"
 
-namespace { //=================================================================
+namespace
+{ //=================================================================
 
-
-} //namespace =================================================================
+} // namespace
 
 //=============================================================================
 //  P R I V A T E
 //=============================================================================
 class DimenvueDBPrivate
 {
-public:
-    DimenvueDBPrivate(DimenvueDB* q)
-        : backend(dimenvue::backend::Context::getInstance())
-        , monitor(new BackendMonitor)
-        , q(q)
+  public:
+    DimenvueDBPrivate(DimenvueDB *q)
+        : backend(dimenvue::backend::Context::getInstance()), monitor(new BackendMonitor), q(q)
     {
         thisPtr = this;
 
         updateTime(time);
 
-        QObject::connect(&timer, &QTimer::timeout, [this](){
-            updateTime();
-        });
+        QObject::connect(&timer, &QTimer::timeout, [this]() { updateTime(); });
         timer.setInterval(1000);
         timer.setSingleShot(false);
         timer.start();
 
-        backend.getSystemStatus()->addStatusChangedCallback(systemStatusCallback);        
+        backend.getSystemStatus()->addStatusChangedCallback(systemStatusCallback);
     }
 
-    static DimenvueDBPrivate* thisPtr;
+    static DimenvueDBPrivate *thisPtr;
     static dimenvue::backend::SystemStatusCallback systemStatusCallback;
     static std::function<void(bool)> scanViewDirtyCallback;
 
@@ -54,7 +50,7 @@ public:
     float totalTB = 0.0;
     int batteryCharge = 0;
     bool wifiConnected = false;
-    int sensorStatus = 0;   //0:
+    int sensorStatus = 0; // 0:
     QTime time;
     QString timeStr = "";
     int language = -1;
@@ -69,41 +65,46 @@ public:
     void updateWifiConnect(bool connect);
     void updateSensorStatus(int status);
     void updateTime(QTime time);
-    void updateTime() {
+    void updateTime()
+    {
         updateTime(QTime::currentTime());
     }
     void updateWifi();
 
-    dimenvue::backend::Context& backend;
-    DimenvueDB* q = nullptr;
+    dimenvue::backend::Context &backend;
+    DimenvueDB *q = nullptr;
     QScopedPointer<BackendMonitor> monitor;
 };
 
 dimenvue::backend::SystemStatusCallback DimenvueDBPrivate::systemStatusCallback =
-        [](const dimenvue::backend::SystemStatus& status) {
-    if (thisPtr) {
-        thisPtr->updateStorage(status.storageStatus.usedGB, status.storageStatus.totalGB);
-        thisPtr->updateBattery(status.batteryPercentage);
-        thisPtr->updateWifiConnect(status.connectivityStatus);
-        thisPtr->updateSensorStatus(status.sensorStatus);
-    }
-};
+    [](const dimenvue::backend::SystemStatus &status) {
+        if (thisPtr)
+        {
+            thisPtr->updateStorage(status.storageStatus.usedGB, status.storageStatus.totalGB);
+            thisPtr->updateBattery(status.batteryPercentage);
+            thisPtr->updateWifiConnect(status.connectivityStatus);
+            thisPtr->updateSensorStatus(status.sensorStatus);
+        }
+    };
 
 std::function<void(bool)> DimenvueDBPrivate::scanViewDirtyCallback = [](bool dirty) {
-    if (thisPtr) {
+    if (thisPtr)
+    {
         qDebug() << "ScanViewDirtyCallback: " << dirty;
     }
 };
 
-DimenvueDBPrivate* DimenvueDBPrivate::thisPtr = nullptr;
+DimenvueDBPrivate *DimenvueDBPrivate::thisPtr = nullptr;
 
 void DimenvueDBPrivate::updateStorage(float usage, float total)
 {
-    if (usageTB != usage) {
+    if (usageTB != usage)
+    {
         usageTB = usage;
         emit q->usageTBChanged();
     }
-    if (totalTB != total) {
+    if (totalTB != total)
+    {
         totalTB = total;
         emit q->totalTBChanged();
     }
@@ -113,7 +114,8 @@ void DimenvueDBPrivate::updateBattery(float value)
 {
     auto percent = int(value * 100.0);
 
-    if (batteryCharge != percent) {
+    if (batteryCharge != percent)
+    {
         batteryCharge = percent;
         emit q->batteryChargeChanged();
     }
@@ -121,7 +123,8 @@ void DimenvueDBPrivate::updateBattery(float value)
 
 void DimenvueDBPrivate::updateWifiConnect(bool connected)
 {
-    if (wifiConnected != connected) {
+    if (wifiConnected != connected)
+    {
         wifiConnected = connected;
         emit q->wifiConnectedChanged();
     }
@@ -129,17 +132,24 @@ void DimenvueDBPrivate::updateWifiConnect(bool connected)
 
 void DimenvueDBPrivate::updateTime(QTime value)
 {
-    if (time != value) {
+    if (time != value)
+    {
         time = value;
-        if (0 == language) {
+        if (0 == language)
+        {
             timeStr = time.toString("AP hh:mm");
-        } else {
+        }
+        else
+        {
             auto hour = time.hour();
             auto minute = time.minute();
-            if (12 < hour) {
+            if (12 < hour)
+            {
                 timeStr = "AM ";
                 hour -= 12;
-            } else {
+            }
+            else
+            {
                 timeStr = "PM ";
             }
             auto fill = QChar('0');
@@ -151,7 +161,8 @@ void DimenvueDBPrivate::updateTime(QTime value)
 
 void DimenvueDBPrivate::updateSensorStatus(int status)
 {
-    if (sensorStatus != status) {
+    if (sensorStatus != status)
+    {
         sensorStatus = status;
         emit q->sensorStatusChanged();
     }
@@ -162,11 +173,13 @@ void DimenvueDBPrivate::updateWifi()
     auto list = dimenvue::backend::SettingInterface().getSSIDList();
     auto qlist = QStringList{};
 
-    for (auto ssid : list) {
+    for (auto ssid : list)
+    {
         qlist.append(QString::fromStdString(ssid));
     }
 
-    if (ssidList != qlist) {
+    if (ssidList != qlist)
+    {
         ssidList = qlist;
         emit q->ssidListChanged();
     }
@@ -175,14 +188,13 @@ void DimenvueDBPrivate::updateWifi()
 //=============================================================================
 //  PUBLIC
 //=============================================================================
-DimenvueDB::DimenvueDB(QObject* parent)
-    : QObject(parent)
-    , d(new DimenvueDBPrivate(this))
+DimenvueDB::DimenvueDB(QObject *parent) : QObject(parent), d(new DimenvueDBPrivate(this))
 {
 }
 
 DimenvueDB::~DimenvueDB()
-{}
+{
+}
 
 void DimenvueDB::updateTime()
 {
@@ -196,14 +208,16 @@ void DimenvueDB::updateWifi()
     d->updateWifi();
 }
 
-void DimenvueDB::updateModelData(QObject* object)
+void DimenvueDB::updateModelData(QObject *object)
 {
-    auto* model = dynamic_cast<SpaceDataModel*>(object);
-    if (model) {
+    auto *model = dynamic_cast<SpaceDataModel *>(object);
+    if (model)
+    {
         model->clear();
         auto scanList = d->backend.getScanList()->getScanList();
         auto index = 0;
-        for (auto viewPtr : scanList) {
+        for (auto viewPtr : scanList)
+        {
             auto status = viewPtr->getStats();
             auto name = QString::fromStdString(status.name);
             QDateTime scanTime;
@@ -215,7 +229,9 @@ void DimenvueDB::updateModelData(QObject* object)
 #endif
             index++;
         }
-    } else {
+    }
+    else
+    {
         qDebug() << "[Error] dynamic_cast<SpaceDataModel*>(" << object << ") failed.";
     }
 }
@@ -228,7 +244,7 @@ bool DimenvueDB::wifiConnect(const QString &ssid, const QString &password)
     auto result = d->backend.getSetting()->connectWifiAsync(stdSsid, stdPassword);
 
 #if (0)
-    //TODO : move to thread
+    // TODO : move to thread
 
     return result.get();
 #else
@@ -245,7 +261,7 @@ bool DimenvueDB::login(const QString &id, const QString &password)
     auto result = d->backend.getSetting()->userLoginAsync(stdId, stdPassword);
 
 #if (0)
-    //TODO : move to thread
+    // TODO : move to thread
 
     return result.get();
 #else
@@ -255,7 +271,7 @@ bool DimenvueDB::login(const QString &id, const QString &password)
 #endif
 }
 
-bool DimenvueDB::createNewScan(const QString &name, QObject* object)
+bool DimenvueDB::createNewScan(const QString &name, QObject *object)
 {
     auto stdName = name.toStdString();
 
@@ -263,8 +279,9 @@ bool DimenvueDB::createNewScan(const QString &name, QObject* object)
     d->currentView->setDirtyCallback(d->scanViewDirtyCallback);
     d->backend.getMapVisualizer()->setScanView(d->currentView);
 
-    auto* model = dynamic_cast<SpaceDataModel*>(object);
-    if (model) {
+    auto *model = dynamic_cast<SpaceDataModel *>(object);
+    if (model)
+    {
         model->append(d->currentView);
     }
 
@@ -280,7 +297,8 @@ bool DimenvueDB::initializeSensor()
 
     qDebug() << "sensor initialized? " << initialzed;
 
-    if (d->sensorInitialized != initialzed) {
+    if (d->sensorInitialized != initialzed)
+    {
         d->sensorInitialized = initialzed;
         emit sensorInitializeChanged();
     }
@@ -298,7 +316,8 @@ void DimenvueDB::updateScanNameList()
     d->scanNameList.clear();
 
     auto list = d->backend.getScanList()->getScanList();
-    for (auto view : list) {
+    for (auto view : list)
+    {
         auto status = view->getStats();
         d->scanNameList.push_back(status.name);
     }
@@ -314,8 +333,10 @@ bool DimenvueDB::isValidScanName(const QString &name) const
     // link error.
     return d->backend.getScanList()->isScanNameExist(stdName);
 #else
-    for (auto viewName : d->scanNameList) {
-        if (viewName == stdName) {
+    for (auto viewName : d->scanNameList)
+    {
+        if (viewName == stdName)
+        {
             return false;
         }
     }
@@ -362,7 +383,8 @@ void DimenvueDB::resetView()
 {
     qDebug() << "resetView()";
 
-    if (d->currentView) {
+    if (d->currentView)
+    {
         d->currentView->reset();
     }
 }
@@ -371,7 +393,8 @@ void DimenvueDB::saveView()
 {
     qDebug() << "saveView()";
 
-    if (d->currentView) {
+    if (d->currentView)
+    {
         d->currentView->save();
     }
 }
@@ -387,7 +410,8 @@ void DimenvueDB::uploadCurrentView()
 
 void DimenvueDB::uploadCheckedView(const std::list<dimenvue::backend::ScanViewPtr> &list)
 {
-    if (list.size()) {
+    if (list.size())
+    {
         auto ret = d->backend.getScanList()->uploadAsync(list);
         d->monitor->uploadScan(std::move(ret));
     }
@@ -437,7 +461,8 @@ QString DimenvueDB::time() const
 
 void DimenvueDB::setLanguage(int value)
 {
-    if (d->language != value) {
+    if (d->language != value)
+    {
         d->language = value;
         emit languageChanged(value);
     }
@@ -504,18 +529,22 @@ bool DimenvueDB::sensorInitialized() const
 
 QString DimenvueDB::scanName() const
 {
-    if (d->currentView) {
+    if (d->currentView)
+    {
         auto stats = d->currentView->getStats();
 
         return QString::fromStdString(stats.name);
-    } else {
+    }
+    else
+    {
         return "Default";
     }
 }
 
 QString DimenvueDB::scanTime() const
 {
-    if (d->currentView) {
+    if (d->currentView)
+    {
         auto stats = d->currentView->getStats();
         auto createdTime = stats.createdTime;
 
@@ -524,7 +553,9 @@ QString DimenvueDB::scanTime() const
         auto d = createdTime.tm_mday;
 
         return QString{"%1-%2-%3"}.arg(y, 4, 10, QChar('0')).arg(m, 2, 10, QChar('0')).arg(d, 2, 10, QChar('0'));
-    } else {
+    }
+    else
+    {
         return "YYYY-MM-DD";
     }
 }

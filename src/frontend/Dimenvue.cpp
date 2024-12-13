@@ -1,38 +1,34 @@
 #include "Dimenvue.h"
-#include <QQmlApplicationEngine>
-#include <QQmlContext>
-#include <QDebug>
-#include <QScreen>
-#include <QFontDatabase>
-#include <QTranslator>
+#include "BackendMonitor.h"
 #include "DimenvueDB.h"
 #include "Hangul.h"
+#include "LanguageTranslationModel.h"
 #include "SpaceDataModel.h"
 #include "SpaceDataSortProxyModel.h"
-#include "LanguageTranslationModel.h"
-#include "BackendMonitor.h"
 #include <QDateTime>
+#include <QDebug>
+#include <QFontDatabase>
+#include <QQmlApplicationEngine>
+#include <QQmlContext>
+#include <QScreen>
+#include <QTranslator>
 
 //=============================================================================
 //  P R I V A T E
 //=============================================================================
 class DimenvuePrivate
 {
-public:
-    Dimenvue* q;
+  public:
+    Dimenvue *q;
 
-    DimenvuePrivate(Dimenvue* q)
-        : q(q)
-        , db(new DimenvueDB)
-        , model(new SpaceDataModel)
-        , proxyModel(new SpaceDataSortProxyModel)
-        , translator(new QTranslator)
-        , stringModel(new LanguageTranslationModel)
-        , hangul(new Automata::Hangul)
-    {}
+    DimenvuePrivate(Dimenvue *q)
+        : q(q), db(new DimenvueDB), model(new SpaceDataModel), proxyModel(new SpaceDataSortProxyModel),
+          translator(new QTranslator), stringModel(new LanguageTranslationModel), hangul(new Automata::Hangul)
+    {
+    }
 
-    const int SCREEN_WIDTH = 2270;// 2560;
-    const int SCREEN_HEIGHT = 1420;//1600;
+    const int SCREEN_WIDTH = 2270;  // 2560;
+    const int SCREEN_HEIGHT = 1420; // 1600;
 
     int windowWidth = SCREEN_WIDTH;
     int windowHeight = SCREEN_HEIGHT;
@@ -49,24 +45,30 @@ public:
     QScopedPointer<SpaceDataSortProxyModel> proxyModel;
     QScopedPointer<QTranslator> translator;
     QScopedPointer<LanguageTranslationModel> stringModel;
-    QObject* qmlKeyboard = nullptr;
-    QObject* qmlRoot = nullptr;
+    QObject *qmlKeyboard = nullptr;
+    QObject *qmlRoot = nullptr;
     QScopedPointer<Automata::Hangul> hangul;
 
-    bool parseWindowOption(int argc, char** argv)
+    bool parseWindowOption(int argc, char **argv)
     {
-        if (1 < argc) {
-            for (int i=1; i<argc; i++) {
+        if (1 < argc)
+        {
+            for (int i = 1; i < argc; i++)
+            {
                 auto param = QString{argv[i]};
-                if (param.startsWith("-window:")) {
+                if (param.startsWith("-window:"))
+                {
                     auto sl = param.split(":");
-                    if (1 < sl.size()) {
+                    if (1 < sl.size())
+                    {
                         auto sizes = sl[1].split("x");
-                        if (1 < sizes.size()) {
+                        if (1 < sizes.size())
+                        {
                             bool ok;
                             auto w = sizes[0].toInt(&ok);
                             auto h = sizes[1].toInt(&ok);
-                            if (w && h) {
+                            if (w && h)
+                            {
                                 windowWidth = w;
                                 windowHeight = h;
                                 fullscreen = false;
@@ -79,10 +81,13 @@ public:
         }
         return false;
     }
-    bool parseDebugOption(int argc, char** argv) {
-        for (auto i=1; i<argc; i++) {
+    bool parseDebugOption(int argc, char **argv)
+    {
+        for (auto i = 1; i < argc; i++)
+        {
             auto param = QString{argv[i]};
-            if (param.startsWith("-debug")) {
+            if (param.startsWith("-debug"))
+            {
                 debugMode = true;
                 return true;
             }
@@ -92,16 +97,18 @@ public:
     bool startEngine()
     {
         const QUrl url(QStringLiteral("qrc:/qml/main.qml"));
-        QObject::connect(&engine, &QQmlApplicationEngine::objectCreated,
-                         q, [url](QObject *obj, const QUrl &objUrl) {
-            if (!obj && url == objUrl)
-                QCoreApplication::exit(-1);
-        }, Qt::QueuedConnection);
+        QObject::connect(
+            &engine, &QQmlApplicationEngine::objectCreated, q,
+            [url](QObject *obj, const QUrl &objUrl) {
+                if (!obj && url == objUrl)
+                    QCoreApplication::exit(-1);
+            },
+            Qt::QueuedConnection);
         engine.load(url);
 
         proxyModel->setSourceModel(model.data());
 
-        auto* rootContext = engine.rootContext();
+        auto *rootContext = engine.rootContext();
         rootContext->setContextProperty("db", db.get());
         rootContext->setContextProperty("monitor", QVariant::fromValue(db->monitorObject()));
         rootContext->setContextProperty("app", QVariant::fromValue(q));
@@ -113,9 +120,10 @@ public:
 
         q->changeLanguage(-1);
 
-        if (debugMode) {
+        if (debugMode)
+        {
 
-            //pre update for testing.
+            // pre update for testing.
             db->updateModelData(model.get());
         }
 
@@ -124,24 +132,29 @@ public:
     bool updateContext()
     {
         auto roots = engine.rootObjects();
-        if (roots.size()) {
-            auto* window = engine.rootObjects().first();
+        if (roots.size())
+        {
+            auto *window = engine.rootObjects().first();
             window->setProperty("width", windowWidth);
             window->setProperty("height", windowHeight);
             qDebug() << "window: " << windowWidth << "x" << windowHeight;
 
-            float basicRatio = float(SCREEN_HEIGHT) / float(SCREEN_WIDTH);// 9.0/16.0;
+            float basicRatio = float(SCREEN_HEIGHT) / float(SCREEN_WIDTH); // 9.0/16.0;
             float ratio = windowHeight / float(windowWidth);
             float scale = 1.0;
-            if (basicRatio < ratio) {
+            if (basicRatio < ratio)
+            {
                 scale = windowWidth / float(SCREEN_WIDTH);
-            } else {
+            }
+            else
+            {
                 scale = windowHeight / float(SCREEN_HEIGHT);
             }
             this->scale = scale;
 
-            auto* root = window->findChild<QObject*>("root");
-            if (root) {
+            auto *root = window->findChild<QObject *>("root");
+            if (root)
+            {
                 root->setProperty("scale", scale);
                 qDebug() << "scale: " << scale;
                 root->setProperty("fullscreen", fullscreen);
@@ -149,11 +162,14 @@ public:
                 root->setProperty("screenHeight", SCREEN_HEIGHT);
 
                 qmlRoot = root;
-            } else {
+            }
+            else
+            {
                 qDebug() << "[Error] can't find root !!!";
             }
 
-            if (fullscreen) {
+            if (fullscreen)
+            {
                 qDebug() << "invoke window.showFullScreen()";
                 QMetaObject::invokeMethod(window, "showFullScreen");
             }
@@ -161,38 +177,36 @@ public:
 
         return true;
     }
-    void startApp() {
+    void startApp()
+    {
         qDebug() << "invoke root.start()";
         auto roots = engine.rootObjects();
-        if (roots.size()) {
-            auto* window = engine.rootObjects().first();
-            auto* root = window->findChild<QObject*>("root");
-            if (root) {
+        if (roots.size())
+        {
+            auto *window = engine.rootObjects().first();
+            auto *root = window->findChild<QObject *>("root");
+            if (root)
+            {
                 QMetaObject::invokeMethod(root, "loadDimenvue");
 
-                qmlKeyboard = root->findChild<QObject*>("keyboard");
-                if (qmlKeyboard != nullptr) {
+                qmlKeyboard = root->findChild<QObject *>("keyboard");
+                if (qmlKeyboard != nullptr)
+                {
                     qDebug() << "[C++] find keyboard Object";
                 }
             }
         }
     }
-    bool initFonts() {
-        auto fonts = QStringList {
-            "Black",
-            "Bold",
-            "ExtraBold",
-            "ExtraLight",
-            "Light",
-            "Medium",
-            "Regular",
-            "SemiBold",
-            "Thin"
-        };
-        for (auto font : fonts) {
-            auto fontPath = QString{"fonts/Pretendard-%1.otf"}.arg(font);
+    bool initFonts()
+    {
+        auto fonts =
+            QStringList{"Black", "Bold", "ExtraBold", "ExtraLight", "Light", "Medium", "Regular", "SemiBold", "Thin"};
+        for (auto font : fonts)
+        {
+            auto fontPath = QString{":/resources/fonts/Pretendard-%1.otf"}.arg(font);
             auto ret = QFontDatabase::addApplicationFont(fontPath);
-            if (-1 == ret) {
+            if (-1 == ret)
+            {
                 qDebug() << fontPath << " load failed.";
                 return false;
             }
@@ -200,7 +214,8 @@ public:
         qDebug() << fonts.size() << " fonts loaded successfully.";
         return true;
     }
-    bool initModel() {
+    bool initModel()
+    {
         SpaceDataModel::registToQml();
 
 #ifdef QT_DEBUG
@@ -211,38 +226,40 @@ public:
 
         srand(0);
 
-        for (auto i=0; i<TEST_DATA_COUNT; i++) {
+        for (auto i = 0; i < TEST_DATA_COUNT; i++)
+        {
             auto index = rand() % 1000;
             auto area = float(rand() % 10000) / 100.0f;
-            auto atime = time.addSecs(60*(rand() % 1000));
+            auto atime = time.addSecs(60 * (rand() % 1000));
 
-            auto name = QString{"Name%1"}.arg(index);            
-            //model->append(i, name, url, area, QDateTime(date, atime));
+            auto name = QString{"Name%1"}.arg(index);
+            // model->append(i, name, url, area, QDateTime(date, atime));
         }
 #endif
         return true;
     }
 
-    void removeChecked() {
+    void removeChecked()
+    {
         auto list = model->checkedItems();
 
         db->remove(list);
 
-        //model->removeChecked();
+        // model->removeChecked();
     }
 };
 
 //=============================================================================
 //  PUBLIC
 //=============================================================================
-Dimenvue::Dimenvue(int& argc, char** argv)
-    : QGuiApplication(argc, argv)
-    , d(new DimenvuePrivate(this))
+Dimenvue::Dimenvue(int &argc, char **argv) : QGuiApplication(argc, argv), d(new DimenvuePrivate(this))
 {
-    auto* screen = screens().first();
+    auto *screen = screens().first();
 
-    if (!d->parseWindowOption(argc, argv)) {
-        if (screen) {
+    if (!d->parseWindowOption(argc, argv))
+    {
+        if (screen)
+        {
             auto geom = screen->geometry();
             d->windowWidth = geom.width();
             d->windowHeight = geom.height();
@@ -253,7 +270,8 @@ Dimenvue::Dimenvue(int& argc, char** argv)
 }
 
 Dimenvue::~Dimenvue()
-{}
+{
+}
 
 bool Dimenvue::initialize()
 {
@@ -269,9 +287,10 @@ bool Dimenvue::initialize()
 
 void Dimenvue::showKeyboard()
 {
-    if (!d->hasKeyboardDevice) {
-        if (nullptr == d->qmlKeyboard) {
-
+    if (!d->hasKeyboardDevice)
+    {
+        if (nullptr == d->qmlKeyboard)
+        {
         }
         d->qmlKeyboard->setProperty("visible", true);
     }
@@ -279,14 +298,16 @@ void Dimenvue::showKeyboard()
 
 void Dimenvue::hideKeyboard()
 {
-    if (d->qmlKeyboard) {
+    if (d->qmlKeyboard)
+    {
         d->qmlKeyboard->setProperty("visible", false);
     }
 }
 
 void Dimenvue::inputHangulKey(QString s)
 {
-    if (d->hangul) {
+    if (d->hangul)
+    {
         QChar ch = s.at(0);
         char c = ch.toLatin1();
         d->hangul->Input(c);
@@ -299,7 +320,8 @@ void Dimenvue::inputHangulKey(QString s)
 
 void Dimenvue::inputNoHangulKey(QString s)
 {
-    if (d->hangul) {
+    if (d->hangul)
+    {
         QChar ch = s.at(0);
         char c = ch.toLatin1();
         d->hangul->InputNoKorea(c);
@@ -312,7 +334,8 @@ void Dimenvue::inputNoHangulKey(QString s)
 
 void Dimenvue::inputBackspace()
 {
-    if (d->hangul) {
+    if (d->hangul)
+    {
         d->hangul->BackKeyProc();
         auto text = d->hangul->getText();
         qDebug() << "[ <- ] " << text;
@@ -321,9 +344,10 @@ void Dimenvue::inputBackspace()
     }
 }
 
-void Dimenvue::inputInit(const QString& text)
+void Dimenvue::inputInit(const QString &text)
 {
-    if (d->hangul) {
+    if (d->hangul)
+    {
         d->hangul->setText(text);
     }
 }
@@ -331,20 +355,27 @@ void Dimenvue::inputInit(const QString& text)
 void Dimenvue::changeLanguage(int lang)
 {
     QString path = ":/resources/localization/";
-    if (0 == lang) {
+    if (0 == lang)
+    {
         path += "Dimenvue_ko.qm";
-    } else {
+    }
+    else
+    {
         path += "Dimenvue_en-us.qm";
     }
-    if (d->translator->load(path)) {
+    if (d->translator->load(path))
+    {
         installTranslator(d->translator.data());
 
-        if (d->stringModel) {
+        if (d->stringModel)
+        {
             qDebug() << "[C++] STRING.languageChanged";
 
             QMetaObject::invokeMethod(d->stringModel.data(), "languageChanged");
         }
-    } else {
+    }
+    else
+    {
         qDebug() << path << " load failed!";
     }
     d->db->setLanguage(lang);
@@ -372,10 +403,12 @@ void Dimenvue::uploadChecked()
 void Dimenvue::loadScanComplete()
 {
     auto roots = d->engine.rootObjects();
-    if (roots.size()) {
-        auto* window = d->engine.rootObjects().first();
-        auto* scanMain = window->findChild<QObject*>("scanMain");
-        if (scanMain) {
+    if (roots.size())
+    {
+        auto *window = d->engine.rootObjects().first();
+        auto *scanMain = window->findChild<QObject *>("scanMain");
+        if (scanMain)
+        {
             QMetaObject::invokeMethod(scanMain, "load", Q_ARG(QVariant, QUrl("qrc:/qml/scan/ScanComplete.qml")));
         }
     }
@@ -384,7 +417,8 @@ void Dimenvue::loadScanComplete()
 void Dimenvue::openMap(int index)
 {
     auto scanView = d->model->getView(index);
-    if (scanView) {
+    if (scanView)
+    {
         d->db->setCurrentView(scanView);
     }
 }
