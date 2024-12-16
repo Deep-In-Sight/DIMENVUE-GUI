@@ -11,6 +11,7 @@
 #include <QQmlApplicationEngine>
 #include <QQmlContext>
 #include <QScreen>
+#include <QSurfaceFormat>
 #include <QTranslator>
 
 //=============================================================================
@@ -267,6 +268,11 @@ Dimenvue::Dimenvue(int &argc, char **argv) : QGuiApplication(argc, argv), d(new 
         }
     }
     d->parseDebugOption(argc, argv);
+
+    // disable vsync
+    auto format = QSurfaceFormat::defaultFormat();
+    format.setSwapInterval(0);
+    QSurfaceFormat::setDefaultFormat(format);
 }
 
 Dimenvue::~Dimenvue()
