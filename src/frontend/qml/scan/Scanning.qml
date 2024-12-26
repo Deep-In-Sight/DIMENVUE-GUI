@@ -2,6 +2,7 @@ import QtQuick 2.0
 import QtQuick.Shapes 1.12
 import QtGraphicalEffects 1.0
 import "../component"
+import com.dimenvue 1.0
 
 Item {
     id: root
@@ -86,14 +87,11 @@ Item {
             Rectangle {
                 width: 500; height: 400
                 radius: 16
-                color: "transparent"
+                color: "#8E9DAF"
                 border.color: "#8E9DAF"
-                Circle {
-                    anchors.centerIn: parent
-                    size: 16
-                    color: "#2079FF"
-                    border.width: 2
-                    border.color: "#25FCF4"
+                PointCloudItem {
+                    anchors.fill: parent
+                    z: 100
                 }
             }
         }

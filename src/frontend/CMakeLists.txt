@@ -44,7 +44,7 @@ target_compile_definitions(
   DIMENVUE
   PRIVATE $<$<OR:$<CONFIG:Debug>,$<CONFIG:RelWithDebInfo>>:QT_QML_DEBUG>)
 target_link_libraries(DIMENVUE PRIVATE Qt5::Core Qt5::Quick Threads::Threads
-                                       mockup_backend)
+                                       ComputeRasterizerLib mockup_backend)
 
 set(APP_SOURCES test_pcd.cpp OverlayDrawer.cpp global.cpp test_pcd.qrc)
 

@@ -1,4 +1,6 @@
 import QtQuick 2.0
+import QtWebView 1.1
+import com.dimenvue 1.0
 
 Item {
     id: scanMain
@@ -19,13 +21,20 @@ Item {
         color: "#000000"
     }
 
-    Image {
-        id: sample
+    // Image {
+    //     id: sample
+    //     width: 2100; height: 1316
+    //     x: 170
+    //     y: 8
+    //     source: "qrc:/resources/images/image_2.png"
+    // }
+    PointCloudItem {
+        id: webview
         width: 2100; height: 1316
         x: 170
         y: 8
-        source: "qrc:/resources/images/image_2.png"
     }
+
 
     Loader {
         id: loader
