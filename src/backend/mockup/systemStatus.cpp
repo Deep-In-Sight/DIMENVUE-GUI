@@ -1,4 +1,5 @@
 #include <systemStatus.hpp>
+#include <thread>
 
 namespace dimenvue
 {

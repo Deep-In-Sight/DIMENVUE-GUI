@@ -5,7 +5,7 @@
 #include "LanguageTranslationModel.h"
 #include "SpaceDataModel.h"
 #include "SpaceDataSortProxyModel.h"
-#include <PointCloudItem.h>
+#include <PointCloudVisualizer.h>
 #include <QDateTime>
 #include <QDebug>
 #include <QFontDatabase>
@@ -27,7 +27,7 @@ class DimenvuePrivate
         : q(q), db(new DimenvueDB), model(new SpaceDataModel), proxyModel(new SpaceDataSortProxyModel),
           translator(new QTranslator), stringModel(new LanguageTranslationModel), hangul(new Automata::Hangul)
     {
-        qmlRegisterType<PointCloudItem>("com.dimenvue", 1, 0, "PointCloudItem");
+        qmlRegisterType<PointCloudVisualizer>("com.dimenvue", 1, 0, "PointCloudItem");
     }
 
     const int SCREEN_WIDTH = 2270;  // 2560;

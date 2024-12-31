@@ -12,8 +12,6 @@ find_package(
   COMPONENTS Core Quick Qml
   REQUIRED)
 find_package(Threads)
-find_package(PCL REQUIRED COMPONENTS common)
-find_package(glm REQUIRED)
 find_package(GLEW REQUIRED)
 find_package(OpenGL REQUIRED)
 
@@ -25,6 +23,7 @@ set(DIMENVUE_SRCS
     DimenvueDB.cpp
     SpaceDataModel.cpp
     SpaceDataSortProxyModel.cpp
+    PointCloudVisualizer.cpp
     BackendMonitor.h
     Dimenvue.h
     DimenvueDB.h
@@ -33,7 +32,8 @@ set(DIMENVUE_SRCS
     KoreanCharMaker.h
     LanguageTranslationModel.h
     SpaceDataModel.h
-    SpaceDataSortProxyModel.h)
+    SpaceDataSortProxyModel.h
+    )
 
 set(DIMENVUE_INCLUDES ${CMAKE_CURRENT_SOURCE_DIR}
                       ${CMAKE_CURRENT_SOURCE_DIR}/../include)
@@ -43,8 +43,11 @@ add_executable(DIMENVUE ${DIMENVUE_SRCS})
 target_compile_definitions(
   DIMENVUE
   PRIVATE $<$<OR:$<CONFIG:Debug>,$<CONFIG:RelWithDebInfo>>:QT_QML_DEBUG>)
+
 target_link_libraries(DIMENVUE PRIVATE Qt5::Core Qt5::Quick Threads::Threads
-                                       ComputeRasterizerLib mockup_backend)
+                                       ComputeRasterizerLib mockup_backend
+                                       )
+target_include_directories(DIMENVUE PRIVATE ${DIMENVUE_INCLUDES})
 
 set(APP_SOURCES test_pcd.cpp OverlayDrawer.cpp global.cpp test_pcd.qrc)
 

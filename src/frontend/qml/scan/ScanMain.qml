@@ -1,5 +1,4 @@
 import QtQuick 2.0
-import QtWebView 1.1
 import com.dimenvue 1.0
 
 Item {
