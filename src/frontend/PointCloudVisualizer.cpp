@@ -19,7 +19,6 @@ PointCloudVisualizer::~PointCloudVisualizer()
 
 void PointCloudVisualizer::onNewPointCloud(const dimenvue::backend::PointCloud::Ptr pcd)
 {
-    qDebug() << "onNewPointCloud()";
     m_renderer->pointLoader->addPoints(pcd);
     // this callback likely called from ros spinning thread so can't call update directly
     QMetaObject::invokeMethod(this, "update", Qt::QueuedConnection);

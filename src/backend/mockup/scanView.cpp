@@ -1,5 +1,7 @@
 #include <scanView.hpp>
 #include <context.hpp>
+#include <thread>
+#include <iostream>
 
 namespace dimenvue
 {
@@ -7,9 +9,24 @@ namespace dimenvue
     {
         struct ScanViewInterface::Impl
         {
+            ~Impl() {
+                if (simRunning)
+                {
+                    std::system("simulation.sh stop");
+                }
+            }
+            
+            void initialize(const std::string& path) {
+                readStatsFromDataset(path);
+                std::cout << "starting sim playback" << std::endl;
+                startSimPlayback();
+            }
+
             void reset()
             {
                 _stats.isDirty = false;
+                std::cout << "restarting sim playback" << std::endl;
+                startSimPlayback();
                 // clear all dataset
             }
 
@@ -65,13 +82,31 @@ namespace dimenvue
                 _stats.thumbnailPath = getThumbnail();
             }
 
+            void startSimPlayback()
+            {
+                std::cout << "Starting sim playback" << std::endl;
+
+                if (simRunning)
+                {
+                    std::system("simulation.sh stop");
+                }
+                
+                std::system("simulation.sh start");
+                simRunning = true;
+            }
+
+            
+            static bool simRunning;
             std::function<void(bool)> _dirtyCallback;
             ScanStats _stats;
         };
 
+        bool ScanViewInterface::Impl::simRunning = false;
+
         ScanViewInterface::ScanViewInterface(const std::string &path) : _impl(new Impl)
         {
-            _impl->readStatsFromDataset(path);
+            std::cout << "ScanViewInterface constructor" << std::endl;
+            _impl->initialize(path);
         }
 
         ScanViewInterface::~ScanViewInterface() = default;

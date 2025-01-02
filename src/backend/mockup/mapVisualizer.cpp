@@ -9,9 +9,6 @@ struct MapVisualizerInterface::Impl
     Impl()
     {
         auto msgCallback = [this](const PointCloud::Ptr msg) {
-            // PointCloudPtr cloud(new PointCloud);
-            std::cout << "received pcd with " << msg->points.size() << " points" << std::endl;
-
             for (auto listener : _listeners)
             {
                 listener->onNewPointCloud(msg);

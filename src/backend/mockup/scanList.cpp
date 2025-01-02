@@ -1,6 +1,8 @@
 #include <scanList.hpp>
 #include <scanView.hpp>
 #include <thread>
+#include <cstdlib>
+#include <iostream>
 
 namespace dimenvue
 {
@@ -8,14 +10,6 @@ namespace dimenvue
     {
         struct ScanListInterface::Impl
         {
-            void initializeList()
-            {
-                for (int i = 0; i < 10; i++)
-                {
-                    _scanList.push_back(std::make_shared<ScanViewInterface>("dataset_name.hdf5"));
-                }
-            }
-
             bool uploadItems(const std::list<ScanViewPtr> &scans)
             {
                 std::this_thread::sleep_for(std::chrono::seconds(1));
@@ -40,7 +34,6 @@ namespace dimenvue
 
         ScanListInterface::ScanListInterface() : _impl(new Impl)
         {
-            _impl->initializeList();
         }
 
         ScanListInterface::~ScanListInterface() = default;
